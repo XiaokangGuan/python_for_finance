@@ -1,8 +1,8 @@
 import numpy as np
 import math
-import time
- 
+
 class EuropeanVanillaPricing:
+
     def __init__(self, param):
         self.method = param.method
         self.pc = param.pc
