@@ -1,59 +1,57 @@
 import numpy as np
 import math
 
-class EuropeanVanillaPricing:
 
-    def __init__(self, param):
-        self.method = param.method
-        self.pc = param.pc
-        self.S = param.S
-        self.K = param.K
-        self.T = param.T
-        self.r = param.r
-        self.sigma = param.sigma
-        if self.method == 'mc':
-            self.iterations = param.iterations
+class EuropeanVanillaPricer:
+
+    def __init__(self, method='MC', callPut='Call', spot=1.0, strike=1.2, tenor=1.0, rate=0.01, sigma=0.10, iterations=1000):
+        self.method = method
+        self.callPut = callPut
+        self.spot = spot
+        self.strike = strike
+        self.tenor = tenor
+        self.rate = rate
+        self.sigma = sigma
+        self.iterations = iterations
  
     def getPrice(self):
-        if self.method == 'mc':
+        """ Calculate price using given method. """
+        if self.method == 'MC':
             return self.getMCPrice()
-        elif self.method == 'exact':
+        elif self.method == 'BS':
             return self.getBlackScholesPrice()
  
     def getMCPrice(self):
-        'Determine the option price using a Monte Carlo approach'
+        """ Determine the option price using a Monte Carlo approach """
         calc = np.zeros([self.iterations, 2])
         rand = np.random.normal(0, 1, [1, self.iterations])
-        mult = self.S*np.exp(self.T*(self.r - 0.5*self.sigma**2))
+        mult = self.spot * np.exp(self.tenor * (self.rate - 0.5 * self.sigma**2))
  
-        if self.pc == 'call':
-            calc[:,1] = mult*np.exp(np.sqrt((self.sigma**2)*self.T)*rand) - self.K
-        elif self.pc == 'put':
-            calc[:,1] = self.K - mult*np.exp(np.sqrt((self.sigma**2)*self.T)*rand)
+        if self.callPut == 'Call':
+            calc[:,1] = mult * np.exp(np.sqrt((self.sigma**2)*self.tenor) * rand) - self.strike
+        elif self.callPut == 'Put':
+            calc[:,1] = self.strike - mult*np.exp(np.sqrt((self.sigma**2) * self.tenor) * rand)
  
-        avg_po = np.sum(np.amax(calc, axis=1))/float(self.iterations)
+        avgPayOff = np.sum(np.amax(calc, axis=1)) / float(self.iterations)
   
-        return np.exp(-1.0*self.r*self.T)*avg_po
+        return np.exp(-self.rate * self.tenor) * avgPayOff
  
     def getBlackScholesPrice(self):
-        'Determine the option price using the exact Black-Scholes expression.'
-        d1 =  np.log(self.S/self.K) + (self.r + 0.5*self.sigma**2)*self.T
-        d1 /= self.sigma*np.sqrt(self.T)
+        """ Determine the option price using the exact Black-Scholes expression. """
+        d1 = (np.log(self.spot/self.strike) + (self.rate + 0.5*self.sigma**2) * self.tenor) / (self.sigma * np.sqrt(self.tenor))
+        d2 = d1 - self.sigma * np.sqrt(self.tenor)
  
-        d2 = d1 - self.sigma*np.sqrt(self.T)
+        call = self.spot * self.ncdf(d1) - self.strike * np.exp(-self.rate * self.tenor) * self.ncdf(d2)
  
-        call = self.S*self.ncdf(d1)
-        call -= self.K*np.exp(-1.0*self.r*self.T)*self.ncdf(d2)
- 
-        if self.pc == 'call':
+        if self.callPut == 'Call':
             return call
-        elif self.pc == 'put':
-            return self.applyPCParity(call)
+        elif self.callPut == 'Put':
+            return self.applyPutCallParity(call)
  
     def ncdf(self, x):
-        'Cumulative distribution function for the standard normal distribution'
+        """ Cumulative distribution function for the standard normal distribution. """
         return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
  
-    def applyPCParity(self, call):
-        'Make use of put-call parity to determine put price.'
-        return self.K*np.exp(-1.0*self.r*self.T) - self.S + call
+    def applyPutCallParity(self, call):
+        """ Make use of put-call parity to determine put price. """
+        return self.strike * np.exp(-self.rate * self.tenor) - self.spot + call
