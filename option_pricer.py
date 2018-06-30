@@ -4,7 +4,7 @@ import math
 
 class EuropeanVanillaPricer:
 
-    def __init__(self, method='MC', callPut='Call', spot=1.0, strike=1.2, tenor=1.0, rate=0.01, sigma=0.10, iterations=1000):
+    def __init__(self, method='MC', callPut='Call', spot=100.0, strike=120, tenor=1.0, rate=0.0014, sigma=0.20, iterations=1e6):
         self.method = method
         self.callPut = callPut
         self.spot = spot
@@ -22,7 +22,11 @@ class EuropeanVanillaPricer:
             return self.getBlackScholesPrice()
  
     def getMCPrice(self):
-        """ Determine the option price using a Monte Carlo approach """
+        """
+        Determine the option price using a Monte Carlo approach.
+        The log return of underlying follow Normal distribution.
+        s_T = s_t * exp((r - 1/2 * sig^2) * (T-t) + sig * sqrt(T-t) * sig_Normal)
+        """
         calc = np.zeros([self.iterations, 2])
         rand = np.random.normal(0, 1, [1, self.iterations])
         mult = self.spot * np.exp(self.tenor * (self.rate - 0.5 * self.sigma**2))
