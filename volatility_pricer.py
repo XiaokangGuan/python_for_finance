@@ -1,6 +1,8 @@
 import numpy as np
 from data_hub import DataHub
 import datetime
+from option_pricer import blackScholesSolveImpliedVol
+
 
 class VolatilityPricer():
     """
@@ -12,7 +14,7 @@ class VolatilityPricer():
     Degree of Freedom is 0 as we are calculating the exact realized vol for the given historical period.
 
     Implied vol:
-
+    Use Black-Scholes to back out the implied volatility from the given market option price.
 
     """
 
@@ -20,7 +22,6 @@ class VolatilityPricer():
         self.historicalDataBySymbol = dict()
         self.dataHub = DataHub()
         self.realizedVolBySymbol = dict()
-        self.impliedVolBySymbol = dict()
 
     def _loadHistoricalUnderlyingData(self, startDate, endDate, symbols):
         self.historicalDataBySymbol = self.dataHub.downloadDataFromYahoo(startDate, endDate, symbols)
@@ -45,6 +46,6 @@ class VolatilityPricer():
 
         return self.realizedVolBySymbol
 
-    def getImpliedVol(self):
+    def getImpliedVol(self, optionPrice=17.5, callPut='Call', spot=586.08, strike=585.0, tenor=0.109589, rate=0.0002):
         """ Calculate the implied volatility from option market price """
-        pass
+        return blackScholesSolveImpliedVol(optionPrice, callPut, spot, strike, tenor, rate)
