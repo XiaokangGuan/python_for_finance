@@ -1,7 +1,7 @@
 import numpy as np
 from data_hub import DataHub
 import datetime
-from option_pricer import blackScholesSolveImpliedVol
+from black_scholes import blackScholesSolveImpliedVol
 
 
 class VolatilityPricer():
