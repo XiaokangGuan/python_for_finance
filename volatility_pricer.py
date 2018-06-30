@@ -1,3 +1,9 @@
+"""
+Id:             volatility_pricer.py
+Copyright:      2018 xiaokang.guan All rights reserved.
+Description:    Volatility pricer.
+"""
+
 import numpy as np
 from data_hub import DataHub
 import datetime

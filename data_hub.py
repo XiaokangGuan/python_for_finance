@@ -1,3 +1,9 @@
+"""
+Id:             data_hub.py
+Copyright:      2018 xiaokang.guan All rights reserved.
+Description:    Data hub to download data from web.
+"""
+
 import pandas_datareader.data as web
 import logging
 import datetime

@@ -1,3 +1,9 @@
+"""
+Id:             option_pricer.py
+Copyright:      2018 xiaokang.guan All rights reserved.
+Description:    Option pricer.
+"""
+
 import numpy as np
 from black_scholes import blackScholesOptionPrice
 
