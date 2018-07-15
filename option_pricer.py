@@ -26,7 +26,7 @@ class EuropeanVanillaPricer():
             return self.getMCPrice()
         elif self.method == 'BS':
             return self.getBSPrice()
- 
+
     def getMCPrice(self):
         """
         Determine the option price using a Monte Carlo approach.
@@ -36,16 +36,16 @@ class EuropeanVanillaPricer():
         calc = np.zeros([self.iterations, 2])
         rand = np.random.normal(0, 1, [1, self.iterations])
         mult = self.spot * np.exp(self.tenor * (self.rate - 0.5 * self.sigma**2))
- 
+
         if self.callPut == 'Call':
             calc[:,1] = mult * np.exp(np.sqrt((self.sigma**2)*self.tenor) * rand) - self.strike
         elif self.callPut == 'Put':
             calc[:,1] = self.strike - mult*np.exp(np.sqrt((self.sigma**2) * self.tenor) * rand)
- 
+
         avgPayOff = np.sum(np.amax(calc, axis=1)) / float(self.iterations)
-  
+
         return np.exp(-self.rate * self.tenor) * avgPayOff
- 
+
     def getBSPrice(self):
         """ Determine the option price using the exact Black-Scholes expression. """
         return blackScholesOptionPrice(self.callPut, self.spot, self.strike, self.tenor, self.rate, self.sigma)
