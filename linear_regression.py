@@ -52,10 +52,9 @@ def performLinearRegression():
     yPredict = regr.predict(xTest)
 
     # The coefficients
-    print('Coefficients: \n', regr.coef_)
+    print('Coefficients: %.4f' % regr.coef_)
     # The mean squared error
-    print("Mean squared error: %.2f"
-          % mean_squared_error(yTest, yPredict))
+    print('Mean squared error: %.2f' % mean_squared_error(yTest, yPredict))
     # Explained variance score: 1 is perfect prediction
     print('Variance score: %.2f' % r2_score(yTest, yPredict))
 
