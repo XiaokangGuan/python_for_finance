@@ -32,7 +32,7 @@ def getTrainAndTestData(startDate=datetime.date(2018,1,1), endDate=datetime.date
     xTest = df.iloc[splitIdx:, :-1].values
     yTest = df.iloc[splitIdx:, -1].values
 
-    return (xTrain, yTrain, xTest, yTest)
+    return xTrain, yTrain, xTest, yTest
 
 
 def performLinearRegression():
