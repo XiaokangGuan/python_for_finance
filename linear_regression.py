@@ -1,5 +1,5 @@
 """
-Id:             option_pricer.py
+Id:             linear_regression.py
 Copyright:      2018 xiaokang.guan All rights reserved.
 Description:    Linear Regression example using sklearn.
 """

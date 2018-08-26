@@ -1,5 +1,5 @@
 """
-Id:             option_pricer.py
+Id:             correlation.py
 Copyright:      2018 xiaokang.guan All rights reserved.
 Description:    Utility functions for correlations.
 """
@@ -18,7 +18,7 @@ def calculateCorrelation(ts1, ts2):
     """
 
     # Combine 2 time series and only keep those common indices
-    df = pd.concat([ts1, ts2], axis=1, join='inner', )
+    df = pd.concat([ts1, ts2], axis=1, join='inner')
     return df.corr()
 
 
