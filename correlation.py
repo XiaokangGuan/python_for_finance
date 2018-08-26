@@ -18,7 +18,7 @@ def calculateCorrelation(ts1, ts2):
     """
 
     # Combine 2 time series and only keep those common indices
-    df = pd.concat([ts1, ts2], axis=1, join='inner')
+    df = pd.concat([ts1, ts2], axis=1, join='inner', )
     return df.corr()
 
 
@@ -40,8 +40,8 @@ def main():
     endDate = datetime.date.today()
     symbols = ['AAPL', 'SPY']
     data = dataHub.downloadDataFromYahoo(startDate, endDate, symbols)
-    ts1 = data.iloc[:, 0]
-    ts2 = data.iloc[:, 1]
+    ts1 = data.values()[0].loc[:, 'Close'].rename(data.keys()[0])
+    ts2 = data.values()[1].loc[:, 'Close'].rename(data.keys()[1])
 
     corr = calculateCorrelation(ts1, ts2)
     logging.info('Correlation = %.2f', corr)
