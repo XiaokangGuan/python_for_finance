@@ -15,8 +15,8 @@ STOCKS_SELECTED = ['NFLX', 'YUM', 'CCE', 'WY', 'VRTX', 'MYL', 'GIS', 'D', 'DHR',
 STOCKS_ERROR = ['ACE', 'ADT', 'GAS', 'ARG', 'BHI', 'BXLT', 'BRCM', 'CVC', 'CAM', 'COH', 'CSC', 'DOW', 'DD', 'EMC', 'FSIV', 'HAR', 'HON', 'HSP', 'HCBK', 'JOY', 'GMCR', 'KRFT', 'LLTC', 'MHFI', 'MJN', 'PLL', 'POM', 'PCL', 'PCP', 'RAI', 'SNDK', 'SIAL', 'STJ', 'SPLS', 'HOT', 'TE', 'TSO', 'TWC', 'TJK', 'TYC', 'WFM', 'YHOO']
 SYMBOLS = list(set(STOCKS_1JAN2014_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2015_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2016_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2017_1JAN2018_SUCCESS_RATE_60))
 
-START_DATE = datetime.date(2017,11,28)
-END_DATE = datetime.date.today()
+START_DATE = datetime.date(2017, 1, 2)
+END_DATE = datetime.date(2018, 1, 2)
 SD_PERIOD = 22
 # This is for trading signal logic
 LOOK_BACK_PERIOD = 22

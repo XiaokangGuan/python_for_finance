@@ -359,7 +359,7 @@ class xMan:
         logging.info('============================================================')
         logging.info('Trades Execution Summary for all dates')
         logging.info('------------------------------------------------------------')
-        keys = result.keys()
+        keys = list(result.keys())
         keys.sort()
         for dt in keys:
             logging.info('xMan: describeTradesExecutedByDatetime: {}: {}'.format(dt, result.get(dt, 'ERROR')))
