@@ -4,10 +4,12 @@ Copyright:      2018 xiaokang.guan All rights reserved.
 Description:    Volatility pricer.
 """
 
-import numpy as np
-from data_hub import DataHub
 import datetime
-from black_scholes import blackScholesSolveImpliedVol
+
+import numpy as np
+
+from utils.black_scholes import blackScholesSolveImpliedVol
+from utils.data_hub import DataHub
 
 
 class VolatilityPricer():
@@ -21,7 +23,6 @@ class VolatilityPricer():
 
     Implied vol:
     Use Black-Scholes to back out the implied volatility from the given market option price.
-
     """
 
     def __init__(self):
@@ -45,7 +46,7 @@ class VolatilityPricer():
         """ Calculate the realized volatility from historical market data """
         self._loadHistoricalUnderlyingData(startDate, endDate, symbols)
 
-        for symbol, df in self.historicalDataBySymbol.iteritems():
+        for symbol, df in self.historicalDataBySymbol.items():
             # Use daily Close to calculate realized vols
             realizedVol = self._calculateRealizedVol(df.loc[:, 'Close'])
             self.realizedVolBySymbol[symbol] = realizedVol

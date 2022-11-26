@@ -18,13 +18,13 @@ def binomialTree(callPut, spot, strike, rate, sigma, tenor, N=2000, american=Tru
     oneMinusP = 1.0 - p
 
     # Initialize the arrays
-    fs = np.asarray([0.0 for i in xrange(N + 1)])
+    fs = np.asarray([0.0 for i in range(N + 1)])
 
     # Stock tree for calculations of expiration values
-    fs2 = np.asarray([(spot * u ** j * d ** (N - j)) for j in xrange(N + 1)])
+    fs2 = np.asarray([(spot * u ** j * d ** (N - j)) for j in range(N + 1)])
 
     # Vectorize the strikes to speed up expiration check
-    fs3 = np.asarray([float(strike) for i in xrange(N + 1)])
+    fs3 = np.asarray([float(strike) for i in range(N + 1)])
 
     # Compute the Binomial Tree leaves, f_{N, j}
     if callPut == 'Call':
@@ -33,7 +33,7 @@ def binomialTree(callPut, spot, strike, rate, sigma, tenor, N=2000, american=Tru
         fs[:] = np.maximum(-fs2 + fs3, 0.0)
 
     # Calculate backward the option prices
-    for i in xrange(N - 1, -1, -1):
+    for i in range(N - 1, -1, -1):
         fs[:-1] = np.exp(-rate * deltaT) * (p * fs[1:] + oneMinusP * fs[:-1])
         fs2[:] = fs2[:] * u
 

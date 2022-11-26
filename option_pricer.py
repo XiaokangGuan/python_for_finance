@@ -5,7 +5,8 @@ Description:    Option pricer.
 """
 
 import numpy as np
-from black_scholes import blackScholesOptionPrice
+from utils.black_scholes import blackScholesOptionPrice
+from utils.binomial_tree import binomialTree
 
 
 class EuropeanVanillaPricer():
@@ -18,7 +19,7 @@ class EuropeanVanillaPricer():
         self.tenor = tenor
         self.rate = rate
         self.sigma = sigma
-        self.iterations = iterations
+        self.iterations = int(iterations)
  
     def getPrice(self):
         """ Calculate price using given method. """
@@ -26,6 +27,8 @@ class EuropeanVanillaPricer():
             return self.getMCPrice()
         elif self.method == 'BS':
             return self.getBSPrice()
+        elif self.method == 'BT':
+            return self.getBTPrice()
 
     def getMCPrice(self):
         """
@@ -49,6 +52,10 @@ class EuropeanVanillaPricer():
     def getBSPrice(self):
         """ Determine the option price using the exact Black-Scholes expression. """
         return blackScholesOptionPrice(self.callPut, self.spot, self.strike, self.tenor, self.rate, self.sigma)
+
+    def getBTPrice(self):
+        """ Determine the option price using Binomial Tree method"""
+        return binomialTree(self.callPut, self.spot, self.strike, self.rate, self.sigma, self.tenor, N=2000, american=False)
  
     def applyPutCallParity(self, call):
         """ Make use of put-call parity to determine put price. """
