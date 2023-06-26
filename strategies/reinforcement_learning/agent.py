@@ -13,7 +13,8 @@ from keras.optimizers import Adam
 
 
 def huber_loss(y_true, y_pred, clip_delta=1.0):
-    """Huber loss - Custom Loss Function for Q Learning
+    """
+    Huber loss - Custom Loss Function for Q Learning
 
     Links: 	https://en.wikipedia.org/wiki/Huber_loss
             https://jaromiru.com/2017/05/27/on-using-huber-loss-in-deep-q-learning/
@@ -26,7 +27,9 @@ def huber_loss(y_true, y_pred, clip_delta=1.0):
 
 
 class Agent:
-    """ Stock Trading Bot """
+    """
+    Stock Trading Bot
+    """
 
     def __init__(self, state_size, strategy="t-dqn", reset_every=1000, pretrained=False, model_name=None):
         self.strategy = strategy
@@ -65,7 +68,8 @@ class Agent:
             self.target_model.set_weights(self.model.get_weights())
 
     def _model(self):
-        """Creates the model
+        """
+        Creates the model
         """
         model = Sequential()
         model.add(Dense(units=128, activation="relu", input_dim=self.state_size))
@@ -78,12 +82,14 @@ class Agent:
         return model
 
     def remember(self, state, action, reward, next_state, done):
-        """Adds relevant data to memory
+        """
+        Adds relevant data to memory
         """
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state, is_eval=False):
-        """Take action from given possible set of actions
+        """
+        Take action from given possible set of actions
         """
         # take random action in order to diversify experience at the beginning
         if not is_eval and random.random() <= self.epsilon:
@@ -97,10 +103,12 @@ class Agent:
         return np.argmax(action_probs[0])
 
     def train_experience_replay(self, batch_size):
-        """Train on previous experiences in memory
         """
+        Train on previous experiences in memory
+        """
+        # TODO: Why random? Why not train on the recent plays only?
         mini_batch = random.sample(self.memory, batch_size)
-        X_train, y_train = [], []
+        x_train, y_train = [], []
 
         # DQN
         if self.strategy == "dqn":
@@ -116,7 +124,7 @@ class Agent:
                 # update the target for current action based on discounted reward
                 q_values[0][action] = target
 
-                X_train.append(state[0])
+                x_train.append(state[0])
                 y_train.append(q_values[0])
 
         # DQN with fixed targets
@@ -137,7 +145,7 @@ class Agent:
                 # update the target for current action based on discounted reward
                 q_values[0][action] = target
 
-                X_train.append(state[0])
+                x_train.append(state[0])
                 y_train.append(q_values[0])
 
         # Double DQN
@@ -159,7 +167,7 @@ class Agent:
                 # update the target for current action based on discounted reward
                 q_values[0][action] = target
 
-                X_train.append(state[0])
+                x_train.append(state[0])
                 y_train.append(q_values[0])
 
         else:
@@ -167,7 +175,7 @@ class Agent:
 
         # update q-function parameters based on huber loss gradient
         loss = self.model.fit(
-            np.array(X_train), np.array(y_train),
+            np.array(x_train), np.array(y_train),
             epochs=1, verbose=0
         ).history["loss"][0]
 

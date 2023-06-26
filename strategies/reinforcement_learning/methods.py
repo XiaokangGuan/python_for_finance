@@ -1,17 +1,7 @@
-import os
 import logging
-
 import numpy as np
-
 from tqdm import tqdm
-
-from .utils import (
-    format_currency,
-    format_position
-)
-from .ops import (
-    get_state
-)
+from .ops import get_state, format_currency, format_position
 
 
 def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=10):
