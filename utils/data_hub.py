@@ -4,20 +4,17 @@ Copyright:      2018 xiaokang.guan All rights reserved.
 Description:    Data hub to download data from web.
 """
 
-import pandas_datareader.data as web
 import logging
 import datetime
 import numpy as np
-
-DATA_SOURCE_YAHOO = 'yahoo'
-DATA_SOURCE_GOOGLE = 'google'
+import yfinance as yf
 
 
 class DataHub:
     def __init__(self):
         pass
 
-    def _downloadData(self, startDate=datetime.date(2017, 1, 1), endDate=datetime.date.today(), symbols=['AAPL', 'SPY'], dataSource=DATA_SOURCE_YAHOO):
+    def _downloadData(self, startDate=datetime.date(2017, 1, 1), endDate=datetime.date.today(), symbols=['AAPL', 'SPY']):
         """
         Downland stock historical data from Yahoo finance, histPanel is a Panel, already in ascending order, e.g:
         Dimensions: 6 (items) x 2 (major_axis) x 2 (minor_axis)
@@ -35,7 +32,7 @@ class DataHub:
         symbolData = dict()
         for symbol in symbols:
             try:
-                df = web.DataReader(symbol, dataSource, startDate, endDate)
+                df = yf.download(symbol, startDate, endDate)
             except Exception as e:
                 logging.exception(f'DataHub: _downloadData: Cannot download historical data for symbol={symbol}')
                 continue
@@ -55,7 +52,4 @@ class DataHub:
         return symbolData
 
     def downloadDataFromYahoo(self, startDate, endDate, symbols):
-        return self._downloadData(startDate, endDate, symbols, DATA_SOURCE_YAHOO)
-
-    def downloadDataFromGoogle(self, startDate, endDate, symbols):
-        return self._downloadData(startDate, endDate, symbols, DATA_SOURCE_GOOGLE)
+        return self._downloadData(startDate, endDate, symbols)
