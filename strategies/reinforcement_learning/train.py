@@ -26,7 +26,6 @@ Options:
 import datetime
 import coloredlogs
 
-from docopt import docopt
 from strategies.reinforcement_learning.agent import Agent
 from strategies.reinforcement_learning.methods import train_model, evaluate_model
 from strategies.reinforcement_learning.ops import (
@@ -86,8 +85,8 @@ if __name__ == "__main__":
     batch_size = 20
     ep_count = 20
     model_name = 'model_debug'
-    pretrained = False
-    debug = False
+    pretrained = True
+    debug = True
 
     coloredlogs.install(level="DEBUG")
     switch_k_backend_device()
