@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from tqdm import tqdm
-from .ops import get_state, format_currency, format_position
+from .ops import get_state, format_quantity, format_notional
 
 
 def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=10):
@@ -27,9 +27,9 @@ def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=1
         # SELL
         elif action == 2 and len(agent.inventory) > 0:
             bought_price = agent.inventory.pop(0)
-            delta = data[t] - bought_price
-            reward = delta  # max(delta, 0)
-            total_profit += delta
+            profit = data[t] - bought_price
+            reward = profit  # max(profit, 0)
+            total_profit += profit
 
         # HOLD
         else:
@@ -44,13 +44,14 @@ def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=1
 
         state = next_state
 
-    if episode % 10 == 0:
-        agent.save(episode)
+    #if episode % 10 == 0:
+    agent.save(episode)
 
     return (episode, ep_count, total_profit, np.mean(np.array(avg_loss)))
 
 
 def evaluate_model(agent, data, window_size, debug):
+    total_cash = 0
     total_profit = 0
     data_length = len(data) - 1
 
@@ -60,7 +61,7 @@ def evaluate_model(agent, data, window_size, debug):
     state = get_state(data, 0, window_size + 1)
 
     for t in range(data_length):
-        reward = 0
+        # reward = 0
         next_state = get_state(data, t + 1, window_size + 1)
 
         # select an action
@@ -72,25 +73,46 @@ def evaluate_model(agent, data, window_size, debug):
 
             history.append((data[t], "BUY"))
             if debug:
-                logging.debug("Buy at: {}".format(format_currency(data[t])))
+                total_shares = len(agent.inventory)
+                total_mv = data[t] * total_shares
+                total_cash -= data[t]
+                logging.debug("Day {} Buy at: {} | Shares: {} | MV: {} | Cash: {}".format(
+                    t,
+                    format_notional(data[t]),
+                    format_quantity(total_shares),
+                    format_notional(total_mv),
+                    format_notional(total_cash)
+                ))
 
         # SELL
         elif action == 2 and len(agent.inventory) > 0:
             bought_price = agent.inventory.pop(0)
-            delta = data[t] - bought_price
-            reward = delta  # max(delta, 0)
-            total_profit += delta
+            profit = data[t] - bought_price
+            # reward = profit  # max(profit, 0)
+            total_profit += profit
 
             history.append((data[t], "SELL"))
             if debug:
-                logging.debug("Sell at: {} | Position: {}".format(
-                    format_currency(data[t]), format_position(data[t] - bought_price)))
+                total_shares = len(agent.inventory)
+                total_mv = data[t] * total_shares
+                total_cash += data[t]
+                logging.debug("Day {} Sell at: {} | Shares: {} | MV: {} | Cash: {} | Profit: {} | Total Profit: {}".format(
+                    t,
+                    format_notional(data[t]),
+                    format_quantity(total_shares),
+                    format_notional(total_mv),
+                    format_notional(total_cash),
+                    format_notional(profit),
+                    format_notional(total_profit)
+                ))
+
         # HOLD
         else:
             history.append((data[t], "HOLD"))
 
         done = (t == data_length - 1)
-        agent.memory.append((state, action, reward, next_state, done))
+        # FIXME: Test data should not be memorized???
+        # agent.memory.append((state, action, reward, next_state, done))
 
         state = next_state
         if done:

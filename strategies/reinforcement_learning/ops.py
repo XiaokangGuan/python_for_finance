@@ -5,35 +5,26 @@ import numpy as np
 import keras.backend as K
 from utils.data_hub import DataHub
 
+format_quantity = lambda x: '{0:,}'.format(x)
+format_notional = lambda x: ('-$' if x < 0 else '+$') + '{0:,.2f}'.format(abs(x))
 
-# Formats Position
-format_position = lambda price: ('-$' if price < 0 else '+$') + '{0:.2f}'.format(abs(price))
-
-
-# Formats Currency
-format_currency = lambda price: '${0:.2f}'.format(abs(price))
-
-
-def show_train_result(result, val_position, initial_offset):
+def show_train_result(result):
     """
     Displays training results
     """
-    if val_position == initial_offset or val_position == 0.0:
-        logging.info('Episode {}/{} - Train Position: {}  Val Position: USELESS  Train Loss: {:.4f}'
-                     .format(result[0], result[1], format_position(result[2]), result[3]))
-    else:
-        logging.info('Episode {}/{} - Train Position: {}  Val Position: {}  Train Loss: {:.4f})'
-                     .format(result[0], result[1], format_position(result[2]), format_position(val_position), result[3],))
+    logging.info('### Train Model Result ###')
+    logging.info('Episode {}/{} - Total Profit: {}  Model Loss: {:.4f})'.format(
+        result[0], result[1], format_notional(result[2]), result[3],))
+    logging.info('##########################')
 
 
-def show_eval_result(model_name, profit, initial_offset):
+def show_eval_result(result):
     """
     Displays eval results
     """
-    if profit == initial_offset or profit == 0.0:
-        logging.info('{}: USELESS\n'.format(model_name))
-    else:
-        logging.info('{}: {}\n'.format(model_name, format_position(profit)))
+    logging.info('### Evaluate Model Result ###')
+    logging.info('Total Profit: {}'.format(format_notional(result[0])))
+    logging.info('##########################')
 
 
 def get_stock_data(stock, start_date, end_date):

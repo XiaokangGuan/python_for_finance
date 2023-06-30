@@ -31,19 +31,20 @@ class Agent:
     Stock Trading Bot
     """
 
-    def __init__(self, state_size, strategy="t-dqn", reset_every=1000, pretrained=False, model_name=None):
+    def __init__(self, state_size, strategy="t-dqn", reset_every=1000, pretrained=False, model_name=None, pretrained_model_name=None):
         self.strategy = strategy
 
         # agent config
         self.state_size = state_size  # normalized previous days
-        self.action_size = 3  # [sit, buy, sell]
-        self.model_name = model_name
+        self.action_size = 3  # [hold, buy, sell]
         self.inventory = []
         self.memory = deque(maxlen=10000)
         self.first_iter = True
 
         # model config
+        self.pretrained = pretrained
         self.model_name = model_name
+        self.pretrained_model_name = pretrained_model_name
         self.gamma = 0.95  # affinity for long term reward
         self.epsilon = 1.0
         self.epsilon_min = 0.01
@@ -53,7 +54,7 @@ class Agent:
         self.custom_objects = {"huber_loss": huber_loss}  # important for loading the model from memory
         self.optimizer = Adam(lr=self.learning_rate)
 
-        if pretrained and self.model_name is not None:
+        if self.pretrained and self.pretrained_model_name is not None:
             self.model = self.load()
         else:
             self.model = self._model()
@@ -187,7 +188,7 @@ class Agent:
         return loss
 
     def save(self, episode):
-        self.model.save("models/{}_{}".format(self.model_name, episode))
+        self.model.save(f'models/{self.model_name}_{episode}')
 
     def load(self):
-        return load_model("models/{}_{}".format(self.model_name, 1), custom_objects=self.custom_objects)
+        return load_model(f'models/{self.pretrained_model_name}', custom_objects=self.custom_objects)

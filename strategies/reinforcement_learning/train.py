@@ -31,6 +31,7 @@ from strategies.reinforcement_learning.methods import train_model, evaluate_mode
 from strategies.reinforcement_learning.ops import (
     get_stock_data,
     show_train_result,
+    show_eval_result,
     switch_k_backend_device
 )
 
@@ -40,13 +41,20 @@ def main(
     window_size,
     batch_size,
     ep_count,
+    ep_start,
+    train,
     train_start,
     train_end,
-    val_start,
-    val_end,
+    validate,
+    validate_start,
+    validate_end,
+    test,
+    test_start,
+    test_end,
     strategy='t-dqn',
     model_name='model_debug',
     pretrained=False,
+    pretrained_model_name=None,
     debug=False
 ):
     """ Trains the stock trading bot using Deep Q-Learning.
@@ -59,33 +67,57 @@ def main(
 
     Args: [python train.py --help]
     """
-    agent = Agent(window_size, strategy=strategy, pretrained=pretrained, model_name=model_name)
+    pretrained_model_name = pretrained_model_name or (f'{model_name}_{ep_start-1}' if pretrained else None)
+    agent = Agent(window_size,
+                  strategy=strategy,
+                  pretrained=pretrained,
+                  model_name=model_name,
+                  pretrained_model_name=pretrained_model_name)
 
-    train_data = get_stock_data(stock, train_start, train_end)
-    val_data = get_stock_data(stock, val_start, val_end)
+    if train:
+        train_data = get_stock_data(stock, train_start, train_end)
+        for episode in range(ep_start, ep_start + ep_count):
+            train_result = train_model(agent,
+                                       episode,
+                                       train_data,
+                                       ep_count=ep_count,
+                                       batch_size=batch_size,
+                                       window_size=window_size)
+            show_train_result(train_result)
 
-    initial_offset = val_data[1] - val_data[0]
+    if validate:
+        validate_data = get_stock_data(stock, validate_start, validate_end)
+        validate_result = evaluate_model(agent, validate_data, window_size, debug)
+        show_eval_result(validate_result)
 
-    for episode in range(1, ep_count + 1):
-        train_result = train_model(agent, episode, train_data, ep_count=ep_count,
-                                   batch_size=batch_size, window_size=window_size)
-        val_result, _ = evaluate_model(agent, val_data, window_size, debug)
-        show_train_result(train_result, val_result, initial_offset)
+    if test:
+        test_data = get_stock_data(stock, test_start, test_end)
+        test_result = evaluate_model(agent, test_data, window_size, debug)
+        show_eval_result(test_result)
 
 
 if __name__ == "__main__":
 
     stock = 'SPY'
+
+    train = False
     train_start = datetime.date(2010, 1, 1)
     train_end = datetime.date(2017, 12, 31)
-    val_start = datetime.date(2018, 1, 1)
-    val_end = datetime.date(2018, 12, 31)
+    validate = True
+    validate_start = datetime.date(2018, 1, 1)
+    validate_end = datetime.date(2018, 12, 31)
+    test = False
+    test_start = datetime.date(2019, 1, 1)
+    test_end = datetime.date(2019, 12, 31)
+
     strategy = 'dqn'
     window_size = 10
     batch_size = 20
     ep_count = 20
-    model_name = 'model_debug'
+    ep_start = 3
     pretrained = True
+    model_name = 'model_debug'
+    pretrained_model_name = 'model_debug_1'
     debug = True
 
     coloredlogs.install(level="DEBUG")
@@ -95,11 +127,18 @@ if __name__ == "__main__":
          window_size,
          batch_size,
          ep_count,
+         ep_start,
+         train,
          train_start,
          train_end,
-         val_start,
-         val_end,
+         validate,
+         validate_start,
+         validate_end,
+         test,
+         test_start,
+         test_end,
          strategy=strategy,
          model_name=model_name,
          pretrained=pretrained,
+         pretrained_model_name=pretrained_model_name,
          debug=debug)
