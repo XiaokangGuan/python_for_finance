@@ -80,7 +80,7 @@ def main(
             train_result = train_model(agent,
                                        episode,
                                        train_data,
-                                       ep_count=ep_count,
+                                       ep_count=ep_start + ep_count - 1,
                                        batch_size=batch_size,
                                        window_size=window_size)
             show_train_result(train_result)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     stock = 'SPY'
 
-    train = False
+    train = True
     train_start = datetime.date(2010, 1, 1)
     train_end = datetime.date(2017, 12, 31)
     validate = True
@@ -114,8 +114,8 @@ if __name__ == "__main__":
     window_size = 10
     batch_size = 20
     ep_count = 20
-    ep_start = 3
-    pretrained = True
+    ep_start = 1
+    pretrained = False
     model_name = 'model_debug'
     pretrained_model_name = 'model_debug_1'
     debug = True

@@ -8,6 +8,27 @@ from utils.data_hub import DataHub
 format_quantity = lambda x: '{0:,}'.format(x)
 format_notional = lambda x: ('-$' if x < 0 else '+$') + '{0:,.2f}'.format(abs(x))
 
+
+def log_daily_flash(t, action_name, price, shares, mv, cash, next_shares, next_mv, next_cash, initial_portfolio):
+    portfolio = mv + cash
+    next_portfolio = next_mv + next_cash
+
+    logging.debug(
+        'T={} {} at: {} | Shares_T: {} | MV_T: {} | Cash_T: {} | Shares_T1: {} | MV_T1: {} | Cash_T1: {} | Daily PNL: {} | Accumulative PNL: {}'.format(
+            t,
+            action_name,
+            format_notional(price),
+            format_quantity(shares),
+            format_notional(mv),
+            format_notional(cash),
+            format_quantity(next_shares),
+            format_notional(next_mv),
+            format_notional(next_cash),
+            format_notional(next_portfolio - portfolio),
+            format_notional(next_portfolio - initial_portfolio)
+        ))
+
+
 def show_train_result(result):
     """
     Displays training results
@@ -24,7 +45,7 @@ def show_eval_result(result):
     """
     logging.info('### Evaluate Model Result ###')
     logging.info('Total Profit: {}'.format(format_notional(result[0])))
-    logging.info('##########################')
+    logging.info('#############################')
 
 
 def get_stock_data(stock, start_date, end_date):
