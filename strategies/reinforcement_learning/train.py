@@ -24,6 +24,12 @@ Options:
 """
 
 import datetime
+import logging
+# First config logging to file
+logging.basicConfig(filename='logs/RL_{0}.log'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')),
+                    format='%(levelname)s: %(message)s',
+                    level=logging.DEBUG)
+
 import coloredlogs
 
 from strategies.reinforcement_learning.agent import Agent
@@ -114,13 +120,13 @@ if __name__ == "__main__":
     window_size = 10
     batch_size = 20
     ep_count = 20
-    ep_start = 1
-    pretrained = False
+    ep_start = 3
+    pretrained = True
     model_name = 'model_debug'
-    pretrained_model_name = 'model_debug_1'
+    pretrained_model_name = 'model_debug_2'
     debug = True
 
-    coloredlogs.install(level="DEBUG")
+    coloredlogs.install(level=logging.DEBUG)
     switch_k_backend_device()
 
     main(stock,

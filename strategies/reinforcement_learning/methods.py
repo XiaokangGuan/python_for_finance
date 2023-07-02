@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from tqdm import tqdm
 from .ops import get_state, format_quantity, format_notional, log_daily_flash

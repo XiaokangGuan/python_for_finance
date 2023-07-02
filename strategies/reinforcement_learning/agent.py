@@ -1,4 +1,5 @@
 import random
+import logging
 
 from collections import deque
 
@@ -191,4 +192,5 @@ class Agent:
         self.model.save(f'models/{self.model_name}_{episode}')
 
     def load(self):
+        logging.info(f'Load pretrained model: {self.pretrained_model_name}')
         return load_model(f'models/{self.pretrained_model_name}', custom_objects=self.custom_objects)
