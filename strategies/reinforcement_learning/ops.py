@@ -7,6 +7,7 @@ from utils.data_hub import DataHub
 
 format_quantity = lambda x: '{0:,}'.format(x)
 format_notional = lambda x: ('-$' if x < 0 else '+$') + '{0:,.2f}'.format(abs(x))
+format_percentage = lambda x: ('-' if x < 0 else '+') + '{0:.2f}%'.format(abs(x) * 100)
 
 
 def log_daily_flash(t, action_name, price, shares, mv, cash, next_shares, next_mv, next_cash, initial_portfolio):
@@ -34,8 +35,9 @@ def show_train_result(result):
     Displays training results
     """
     logging.info('### Train Model Result ###')
-    logging.info('Episode {}/{} - Total Profit: {}  Model Loss: {:.4f})'.format(
-        result[0], result[1], format_notional(result[2]), result[3],))
+    logging.info('Episode {}/{}'.format(result[0], result[1]))
+    logging.info('Total Profit: {}'.format(format_notional(result[2])))
+    logging.info('Model Loss: {:.4f}'.format(result[3]))
     logging.info('##########################')
 
 
@@ -44,7 +46,12 @@ def show_eval_result(result):
     Displays eval results
     """
     logging.info('### Evaluate Model Result ###')
-    logging.info('Total Profit: {}'.format(format_notional(result[0])))
+    logging.info('Start: {}'.format(result[0]))
+    logging.info('End: {}'.format(result[1]))
+    logging.info('Total Profit: {}'.format(format_notional(result[2])))
+    logging.info('Annualized Return: {}'.format(format_percentage(result[3])))
+    logging.info('Annualized Volatility: {}'.format(format_percentage(result[4])))
+    logging.info('Sharpe Ratio: {}'.format(result[5]))
     logging.info('#############################')
 
 
@@ -81,9 +88,9 @@ def sigmoid(x):
         print("Error in sigmoid: " + err)
 
 
-def get_state(data, t, n_days):
+def get_state(data, t, n_days, stock_percentage):
     """
-    Returns an n-day state representation ending at time t
+    Returns state at t (n-day price representation, portfolio stock %)
     For each day of observation period, we take Sigmoid(Price_T - Price_T-1)
     """
     d = t - n_days + 1
@@ -91,4 +98,21 @@ def get_state(data, t, n_days):
     res = []
     for i in range(n_days - 1):
         res.append(sigmoid(block[i + 1] - block[i]))
+
+    res.append(stock_percentage)
+
+    return np.array([res])
+
+
+def get_state1(prices, t, n_days, holding, cash):
+    """
+    Returns state at t (n-day prices, stock holdings, cash)
+    No standardization / normalization performed
+    """
+    d = t - n_days + 1
+    res = prices[d: t + 1] if d >= 0 else -d * [prices[0]] + prices[0: t + 1]  # pad with t0
+
+    res.append(holding)
+    res.append(cash)
+
     return np.array([res])

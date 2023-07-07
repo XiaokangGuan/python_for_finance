@@ -74,11 +74,12 @@ def main(
     Args: [python train.py --help]
     """
     pretrained_model_name = pretrained_model_name or (f'{model_name}_{ep_start-1}' if pretrained else None)
-    agent = Agent(window_size,
+    agent = Agent(window_size + 1,
                   strategy=strategy,
                   pretrained=pretrained,
                   model_name=model_name,
-                  pretrained_model_name=pretrained_model_name)
+                  pretrained_model_name=pretrained_model_name,
+                  debug=debug)
 
     if train:
         train_data = get_stock_data(stock, train_start, train_end)
@@ -88,17 +89,18 @@ def main(
                                        train_data,
                                        ep_count=ep_start + ep_count - 1,
                                        batch_size=batch_size,
-                                       window_size=window_size)
+                                       window_size=window_size,
+                                       debug=debug)
             show_train_result(train_result)
 
     if validate:
         validate_data = get_stock_data(stock, validate_start, validate_end)
-        validate_result = evaluate_model(agent, validate_data, window_size, debug)
+        validate_result = evaluate_model(agent, validate_start, validate_end, validate_data, window_size, debug)
         show_eval_result(validate_result)
 
     if test:
         test_data = get_stock_data(stock, test_start, test_end)
-        test_result = evaluate_model(agent, test_data, window_size, debug)
+        test_result = evaluate_model(agent, test_start, test_end, test_data, window_size, debug)
         show_eval_result(test_result)
 
 
@@ -106,24 +108,24 @@ if __name__ == "__main__":
 
     stock = 'SPY'
 
-    train = True
+    train = False
     train_start = datetime.date(2010, 1, 1)
     train_end = datetime.date(2017, 12, 31)
-    validate = True
+    validate = False
     validate_start = datetime.date(2018, 1, 1)
     validate_end = datetime.date(2018, 12, 31)
-    test = False
+    test = True
     test_start = datetime.date(2019, 1, 1)
     test_end = datetime.date(2019, 12, 31)
 
-    strategy = 'dqn'
+    strategy = 't-dqn'
     window_size = 10
     batch_size = 20
     ep_count = 20
-    ep_start = 3
+    ep_start = 6
     pretrained = True
-    model_name = 'model_debug'
-    pretrained_model_name = 'model_debug_2'
+    model_name = 'normalized_state'
+    pretrained_model_name = 'normalized_state_5'
     debug = True
 
     coloredlogs.install(level=logging.DEBUG)

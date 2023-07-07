@@ -32,15 +32,16 @@ class Agent:
     Stock Trading Bot
     """
 
-    def __init__(self, state_size, strategy="t-dqn", reset_every=1000, pretrained=False, model_name=None, pretrained_model_name=None):
+    def __init__(self, state_size, strategy="t-dqn", reset_every=1000, pretrained=False, model_name=None, pretrained_model_name=None, debug=False):
         self.strategy = strategy
 
         # agent config
         self.state_size = state_size  # normalized previous days
         self.action_size = 3  # [hold, buy, sell]
-        self.inventory = []
+        self.inventory = 0
         self.memory = deque(maxlen=10000)
         self.first_iter = True
+        self.debug = debug
 
         # model config
         self.pretrained = pretrained
@@ -72,7 +73,14 @@ class Agent:
     def _model(self):
         """
         Creates the model
+        Inputs: state including everything affects decision making / Q value,
+        i.e. - current and past prices, for price prediction etc.
+             - current stock holding, this affects portfolio value at next state.
+             - current cash balances, this directly goes into portfolio value at next state.
+        Outputs: Resulting Q value for each action. Not necessarily portfolio value as rewards are normalized.
+        We use this same model for both Act and Q equation.
         """
+        # TODO: Why relu activation? q value predicted could be negative
         model = Sequential()
         model.add(Dense(units=128, activation="relu", input_dim=self.state_size))
         model.add(Dense(units=256, activation="relu"))
@@ -101,14 +109,15 @@ class Agent:
             self.first_iter = False
             return 1  # make a definite buy on the first iter
 
-        action_probs = self.model.predict(state, verbose=0)
-        return np.argmax(action_probs[0])
+        action_values = self.model.predict(state, verbose=0)
+        if self.debug:
+            logging.debug(f'State: {state[0].tolist()} Action value: {action_values[0].tolist()} Action: {np.argmax(action_values[0])}')
+        return np.argmax(action_values[0])
 
     def train_experience_replay(self, batch_size):
         """
         Train on previous experiences in memory
         """
-        # TODO: Why random? Why not train on the recent plays only?
         mini_batch = random.sample(self.memory, batch_size)
         x_train, y_train = [], []
 
@@ -150,7 +159,7 @@ class Agent:
                 x_train.append(state[0])
                 y_train.append(q_values[0])
 
-        # Double DQN
+        # TODO: Double DQN
         elif self.strategy == "double-dqn":
             if self.n_iter % self.reset_every == 0:
                 # reset target model weights
