@@ -2,7 +2,7 @@
 Script for training Stock Trading Bot.
 
 Usage:
-  train.py <train-stock> <val-stock> [--strategy=<strategy>]
+  run.py <train-stock> <val-stock> [--strategy=<strategy>]
     [--window-size=<window-size>] [--batch-size=<batch-size>]
     [--episode-count=<episode-count>] [--model-name=<model-name>]
     [--pretrained] [--debug]
@@ -72,7 +72,7 @@ def main(
     For each training sample in a batch, Agent observes state, act, get a reward.
     Each training sample play is memorized. We calibrate Agent parameters at end of each batch.
 
-    Args: [python train.py --help]
+    Args: [python run.py --help]
     """
     pretrained_model_name = pretrained_model_name or (f'{model_name}_{ep_start-1}' if pretrained else None)
     agent = Agent(window_size + 1,
