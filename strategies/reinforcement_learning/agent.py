@@ -38,7 +38,6 @@ class Agent:
         # agent config
         self.state_size = state_size  # normalized previous days
         self.action_size = 3  # [hold, buy, sell]
-        self.inventory = 0
         self.memory = deque(maxlen=10000)
         self.first_iter = True
         self.debug = debug
@@ -76,7 +75,6 @@ class Agent:
         Inputs: state including everything affects decision making / Q value,
         i.e. - current and past prices, for price prediction etc.
              - current stock holding, this affects portfolio value at next state.
-             - current cash balances, this directly goes into portfolio value at next state.
         Outputs: Resulting Q value for each action. Not necessarily portfolio value as rewards are normalized.
         We use this same model for both Act and Q equation.
         """

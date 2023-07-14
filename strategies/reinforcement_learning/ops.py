@@ -6,18 +6,19 @@ import keras.backend as K
 from utils.data_hub import DataHub
 
 format_quantity = lambda x: '{0:,}'.format(x)
-format_notional = lambda x: ('-$' if x < 0 else '+$') + '{0:,.2f}'.format(abs(x))
+format_notional = lambda x: ('-$' if x < 0 else '+$') + '{0:15,.2f}'.format(abs(x))
 format_percentage = lambda x: ('-' if x < 0 else '+') + '{0:.2f}%'.format(abs(x) * 100)
 
 
-def log_daily_flash(t, action_name, price, shares, mv, cash, next_shares, next_mv, next_cash, initial_portfolio):
+def log_daily_flash(t, action_name, trade_quantity, price, shares, mv, cash, next_shares, next_mv, next_cash, initial_portfolio):
     portfolio = mv + cash
     next_portfolio = next_mv + next_cash
 
     logging.debug(
-        'T={} {} at: {} | Shares_T: {} | MV_T: {} | Cash_T: {} | Shares_T1: {} | MV_T1: {} | Cash_T1: {} | Daily PNL: {} | Accumulative PNL: {}'.format(
+        'T={:5d} | {:10s} | Trade Quantity: {} | Price: {} | Shares_T: {} | MV_T: {} | Cash_T: {} | Shares_T1: {} | MV_T1: {} | Cash_T1: {} | Daily PNL: {} | Accumulative PNL: {}'.format(
             t,
             action_name,
+            format_quantity(trade_quantity),
             format_notional(price),
             format_quantity(shares),
             format_notional(mv),
@@ -116,3 +117,9 @@ def get_state1(prices, t, n_days, holding, cash):
     res.append(cash)
 
     return np.array([res])
+
+
+def calculate_commission(trade_quantity):
+    # TODO: More realistic
+    commission = 0 if trade_quantity == 0 else 1
+    return commission

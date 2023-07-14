@@ -61,6 +61,7 @@ def main(
     model_name='model_debug',
     pretrained=False,
     pretrained_model_name=None,
+    train_in_evaluate=True,
     debug=False
 ):
     """ Trains the stock trading bot using Deep Q-Learning.
@@ -95,12 +96,26 @@ def main(
 
     if validate:
         validate_data = get_stock_data(stock, validate_start, validate_end)
-        validate_result = evaluate_model(agent, validate_start, validate_end, validate_data, window_size, debug)
+        validate_result = evaluate_model(agent,
+                                         validate_start,
+                                         validate_end,
+                                         validate_data,
+                                         batch_size=batch_size,
+                                         window_size=window_size,
+                                         train_in_evaluate=train_in_evaluate,
+                                         debug=debug)
         show_eval_result(validate_result)
 
     if test:
         test_data = get_stock_data(stock, test_start, test_end)
-        test_result = evaluate_model(agent, test_start, test_end, test_data, window_size, debug)
+        test_result = evaluate_model(agent,
+                                     test_start,
+                                     test_end,
+                                     test_data,
+                                     batch_size=batch_size,
+                                     window_size=window_size,
+                                     train_in_evaluate=train_in_evaluate,
+                                     debug=debug)
         show_eval_result(test_result)
 
 
@@ -115,17 +130,18 @@ if __name__ == "__main__":
     validate_start = datetime.date(2018, 1, 1)
     validate_end = datetime.date(2018, 12, 31)
     test = True
-    test_start = datetime.date(2019, 1, 1)
+    test_start = datetime.date(2018, 1, 1)
     test_end = datetime.date(2019, 12, 31)
 
     strategy = 't-dqn'
     window_size = 10
     batch_size = 20
     ep_count = 20
-    ep_start = 6
+    ep_start = 8
     pretrained = True
     model_name = 'normalized_state'
-    pretrained_model_name = 'normalized_state_5'
+    pretrained_model_name = 'normalized_state_16'
+    train_in_evaluate = True
     debug = True
 
     coloredlogs.install(level=logging.DEBUG)
@@ -149,4 +165,5 @@ if __name__ == "__main__":
          model_name=model_name,
          pretrained=pretrained,
          pretrained_model_name=pretrained_model_name,
+         train_in_evaluate=train_in_evaluate,
          debug=debug)

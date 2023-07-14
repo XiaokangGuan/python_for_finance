@@ -4,11 +4,10 @@ from tqdm import tqdm
 from .ops import get_state, log_daily_flash, sigmoid, calculate_commission
 from utils.performance_evaluation import annualized_return, annualized_volatility, sharpe_ratio
 
-
 # Logic:
-# 1. Trade 1 share at a time
-# 2. Only allow Long positions
-# 3. Long MV is limited by available cash. Discourage over BUY through 0 rewards.
+# 1. Take full position every time, i.e. Full long or Full short or Flat.
+# 2. Allow Long, Long MV is capped by min(initial capital, portfolio value).
+# 3. Allow Short, Short MV is capped by min(initial capital, portfolio value).
 
 def execute_model(agent, data, mode, episode=1, ep_count=100, batch_size=32, window_size=10, train_experience=True, debug=False):
     agent.debug = debug
@@ -37,57 +36,38 @@ def execute_model(agent, data, mode, episode=1, ep_count=100, batch_size=32, win
         # Select an action
         action = agent.act(state)
 
-        # BUY
+        # Full Long: Long amount is capped
         if action == 1:
-            # Illegal BUY, position / cash stays same, assign penalty
-            if cash < data[t]:
-                action_name = 'Invalid BUY'
-
-                next_quantity = quantity
-                trade_quantity = next_quantity - quantity
-                commission = calculate_commission(trade_quantity)
-                next_mv = data[t + 1] * next_quantity
-                next_cash = cash
-                reward = 0
-            else:
-                action_name = 'BUY'
-
-                next_quantity = quantity + 1
-                trade_quantity = next_quantity - quantity
-                commission = calculate_commission(trade_quantity)
-                next_mv = data[t + 1] * next_quantity
-                next_cash = cash - data[t]
-                reward = sigmoid(next_mv + next_cash - mv - cash - commission)
-        # SELL
-        elif action == 2:
-            # Illegal SELL, position / cash stays same, assign penalty
-            if quantity <= 0:
-                action_name = 'Invalid SELL'
-
-                next_quantity = quantity
-                trade_quantity = next_quantity - quantity
-                commission = calculate_commission(trade_quantity)
-                next_mv = data[t + 1] * next_quantity
-                next_cash = cash
-                reward = 0
-            else:
-                action_name = 'SELL'
-
-                next_quantity = quantity - 1
-                trade_quantity = next_quantity - quantity
-                commission = calculate_commission(trade_quantity)
-                next_mv = data[t + 1] * next_quantity
-                next_cash = cash + data[t]
-                reward = sigmoid(next_mv + next_cash - mv - cash - commission)
-        # HOLD
-        else:
-            action_name = 'HOLD'
-
-            next_quantity = quantity
+            action_name = 'Full Long'
+            long_mv_cap = min(initial_cash, cash + mv)
+            next_quantity = int(long_mv_cap / data[t])
             trade_quantity = next_quantity - quantity
-            commission = calculate_commission(trade_quantity)
             next_mv = data[t + 1] * next_quantity
-            next_cash = cash
+            next_cash = cash - data[t] * trade_quantity
+            commission = calculate_commission(trade_quantity)
+            reward = sigmoid(next_mv + next_cash - mv - cash - commission)
+
+        # Full Short: Short amount is capped
+        elif action == 2:
+            action_name = 'Full Short'
+            short_mv_cap = min(initial_cash, cash + mv)
+            next_quantity = - int(short_mv_cap / data[t])
+            trade_quantity = next_quantity - quantity
+            next_mv = data[t + 1] * next_quantity
+            next_cash = cash - data[t] * trade_quantity
+            commission = calculate_commission(trade_quantity)
+            reward = sigmoid(next_mv + next_cash - mv - cash - commission)
+
+        # Neutral / Flat: Close all stock positions, as we do not bet if uncertain
+        else:
+            action_name = 'Flat'
+
+            next_quantity = 0
+            trade_quantity = next_quantity - quantity
+            next_mv = data[t + 1] * next_quantity
+            # TODO: Possible to run negative cash?
+            next_cash = cash - data[t] * trade_quantity
+            commission = calculate_commission(trade_quantity)
             reward = sigmoid(next_mv + next_cash - mv - cash - commission)
 
         history.append((t, data[t], action_name, mv, cash))
