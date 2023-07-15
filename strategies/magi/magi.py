@@ -100,9 +100,11 @@ class Magi:
         return -self.lookForwardPeriod
 
     def getOrderSize(self, price):
-        """Esitmate the order size based on the current price and order limit"""
-        #TODO: We need to improve the logic
-        return math.floor(self.orderLimit / price)
+        """Estimate the order size based on the current price and order limit"""
+        # Limit the max allowed portfolio exposure (i.e. MTM) by initialCapital and available cash and manual limit.
+        # TODO: Need smarter way of allocating to stocks, i.e. orderLimit
+        limit = max(0, min(self.capital - self.xMan.portfolioPositionMTM, self.xMan.portfolioCashBalance, self.orderLimit))
+        return math.floor(limit / price)
 
     def runStrategyOnMarketTick(self, marketTick):
         """
@@ -155,6 +157,8 @@ class Magi:
             logging.info('------------------------------------------------------------')
             logging.info('Execute existing orders and run strategy for today')
             logging.info('------------------------------------------------------------')
+
+            # TODO: Move below block to xMan on market data update?
             for symbol in self.symbolData.keys():
                 if dtIdx not in (self.symbolData[symbol].index[startIdx:] if endIdx == 0 else self.symbolData[symbol].index[startIdx: endIdx]):
                     logging.debug('Magi: run: dtIdx={}: Cannot trade, outside strategy running period'.format(dtIdx))
@@ -171,6 +175,9 @@ class Magi:
                 # Execute existing orders from previous tradingPeriod. In reality, this happens during current tradingPeriod.
                 self.xMan.executeOrdersOnMarketTick(marketTick)
 
+                # Update Position and Portfolio MTM using Close price. In reality, this happens at end of current trading Period.
+                self.xMan.updateMTMOnMarketTick(marketTick)
+
                 # Run strategy on current tradingPeriod. In reality, this happens immediately after current tradingPeriod.
                 self.runStrategyOnMarketTick(marketTick)
 
@@ -186,7 +193,7 @@ class Magi:
 def main():
     """Main function"""
     #logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.INFO)
-    logging.basicConfig(filename='Magi_{0}.log'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')), format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.basicConfig(filename='logs/Magi_{0}.log'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')), format='%(levelname)s: %(message)s', level=logging.INFO)
     magi = Magi()
     magi.run()
 

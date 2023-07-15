@@ -78,12 +78,13 @@ class Position:
         self.quantity = 0
         self.cost = 0
         self.realizedPNL = 0
+        self.MTM = 0
 
     def __str__(self):
-        return 'Position<symbol={}, quantity={}, cost={}, realizedPNL={}>'.format(self.symbol, self.quantity, self.cost, self.realizedPNL)
+        return 'Position<symbol={}, quantity={}, cost={}, MTM={}, realizedPNL={}>'.format(self.symbol, self.quantity, self.cost, self.MTM, self.realizedPNL)
 
     def change(self, price, quantity, commission):
-        """Position change should ONLY triggered by order execution"""
+        """Position change should ONLY be triggered by order execution"""
         logging.info('Position: BEFORE: position={} CHANGE: price={}, quantity={}, commission={}'.format(self, price, quantity, commission))
         if quantity == 0:
             logging.error('Position: change: symbol={} Invalid quantity is 0'.format(self.symbol))
@@ -98,6 +99,12 @@ class Position:
             self.cost += self.cost/self.quantity*quantity
             self.quantity += quantity
         logging.info('Position: AFTER: position={} CHANGE: price={}, quantity={}, commission={}'.format(self, price, quantity, commission))
+
+    def updateMTM(self, price):
+        """Update Position MTM based on given price marker"""
+        #logging.info('Position MTM: BEFORE: position={} price={}'.format(self, price))
+        self.MTM = self.quantity * price
+        #logging.info('Position MTM: AFTER: position={} price={}'.format(self, price))
 
 
 class MarketTick:
@@ -137,12 +144,13 @@ class Performance:
         self.realizedPNL = 0
         self.positionQuantity = 0
         self.positionCost = 0
+        self.positionMTM = 0
         self.totalTradeLife = datetime.timedelta()
 
     def __str__(self):
-        return 'Performance<symbol={}, outstandingMarketOrders={}, outstandingStopOrders={}, outstandingLimitOrders={}, filledMarketOrders={}, filledStopOrders={}, filledLimitOrders={}, cancelledMarketOrders={}, cancelledStopOrders={}, cancelledLimitOrders={}, success={}, failure={}, successRate={:.2f}%, maxCapitalRequired={}, realizedPNL={}, positionQuantity={}, positionCost={}, totalTradeLife={}, averageTradeLife={}>'.format(self.symbol, self.outstandingMarketOrders, self.outstandingStopOrders, self.outstandingLimitOrders, self.filledMarketOrders, self.filledStopOrders, self.filledLimitOrders, self.cancelledMarketOrders, self.cancelledStopOrders, self.cancelledLimitOrders, self.success, self.failure, float(self.success*100)/(self.success+self.failure) if self.success+self.failure > 0 else float('nan'), self.maxCapitalRequired, self.realizedPNL, self.positionQuantity, self.positionCost, self.totalTradeLife, self.totalTradeLife/(self.success+self.failure) if self.success+self.failure > 0 else 'No Trades')
+        return 'Performance<symbol={}, outstandingMarketOrders={}, outstandingStopOrders={}, outstandingLimitOrders={}, filledMarketOrders={}, filledStopOrders={}, filledLimitOrders={}, cancelledMarketOrders={}, cancelledStopOrders={}, cancelledLimitOrders={}, success={}, failure={}, successRate={:.2f}%, maxCapitalRequired={}, realizedPNL={}, positionQuantity={}, positionCost={}, positionMTM={}, totalTradeLife={}, averageTradeLife={}>'.format(self.symbol, self.outstandingMarketOrders, self.outstandingStopOrders, self.outstandingLimitOrders, self.filledMarketOrders, self.filledStopOrders, self.filledLimitOrders, self.cancelledMarketOrders, self.cancelledStopOrders, self.cancelledLimitOrders, self.success, self.failure, float(self.success*100)/(self.success+self.failure) if self.success+self.failure > 0 else float('nan'), self.maxCapitalRequired, self.realizedPNL, self.positionQuantity, self.positionCost, self.positionMTM, self.totalTradeLife, self.totalTradeLife/(self.success+self.failure) if self.success+self.failure > 0 else 'No Trades')
 
-    def updatePerformance(self, outstandingMarketOrders, outstandingStopOrders, outstandingLimitOrders, filledMarketOrders, filledStopOrders, filledLimitOrders, cancelledMarketOrders, cancelledStopOrders, cancelledLimitOrders, success, failure, maxCapitalRequired, realizedPNL, positionQuantity, positionCost, totalTradeLife):
+    def updatePerformance(self, outstandingMarketOrders, outstandingStopOrders, outstandingLimitOrders, filledMarketOrders, filledStopOrders, filledLimitOrders, cancelledMarketOrders, cancelledStopOrders, cancelledLimitOrders, success, failure, maxCapitalRequired, realizedPNL, positionQuantity, positionCost, positionMTM, totalTradeLife):
         self.outstandingMarketOrders = outstandingMarketOrders
         self.outstandingStopOrders = outstandingStopOrders
         self.outstandingLimitOrders = outstandingLimitOrders
@@ -158,6 +166,7 @@ class Performance:
         self.realizedPNL = realizedPNL
         self.positionQuantity = positionQuantity
         self.positionCost = positionCost
+        self.positionMTM = positionMTM
         self.totalTradeLife = totalTradeLife
 
 
@@ -170,9 +179,11 @@ class xMan:
         self.portfolioCashBalance = initialCapital
         self.initialCapital = initialCapital
         self.portfolioPositionCost = 0
+        self.portfolioPositionMTM = 0
         self.portfolioMaxCapitalRequired = 0
         self.portfolioSuccess = 0
         self.portfolioFailure = 0
+        self.portfolioTotalTradeLife = datetime.timedelta()
 
     def placeOrder(self, order):
         self.orders.append(order)
@@ -263,13 +274,20 @@ class xMan:
                 continue
             if order.type == ORDER_TYPE_MARKET:
                 self.executeMarketOrder(order, marketTick)
-            #TODO: We execute stop order ahead of limit order, limit order can possibly be cancelled before filled
+            # TODO: We execute stop order ahead of limit order, limit order can possibly be cancelled before filled
             elif order.type == ORDER_TYPE_STOP:
                 self.executeStopOrder(order, marketTick)
             elif order.type == ORDER_TYPE_LIMIT:
                 self.executeLimitOrder(order, marketTick)
             else:
                 logging.error('xMan: executeOrdersOnMarketTick: Unsupported order type {}'.format(order))
+
+    def updateMTMOnMarketTick(self, marketTick):
+        position = self.getPositionBySymbol(marketTick.symbol)
+        if not position:
+            position = Position(marketTick.symbol)
+            self.positions.append(position)
+        position.updateMTM(marketTick.close)
 
     def cancelLinkedOrders(self, order, datetime):
         """If one order get fully filled, other linked orders will be cancelled"""
@@ -295,6 +313,7 @@ class xMan:
         self.portfolioRealizedPNL = 0
         self.portfolioCashBalance = self.initialCapital
         self.portfolioPositionCost = 0
+        self.portfolioPositionMTM = 0
         self.portfolioSuccess = 0
         self.portfolioFailure = 0
         self.portfolioTotalTradeLife = datetime.timedelta()
@@ -336,7 +355,24 @@ class xMan:
             success = filledLimitOrders
             failure = filledStopOrders
             maxCapitalRequired = max(performance.maxCapitalRequired, position.cost)
-            performance.updatePerformance(outstandingMarketOrders, outstandingStopOrders, outstandingLimitOrders, filledMarketOrders, filledStopOrders, filledLimitOrders, cancelledMarketOrders, cancelledStopOrders, cancelledLimitOrders, success, failure, maxCapitalRequired, position.realizedPNL, position.quantity, position.cost, totalTradeLife)
+            performance.updatePerformance(
+                outstandingMarketOrders,
+                outstandingStopOrders,
+                outstandingLimitOrders,
+                filledMarketOrders,
+                filledStopOrders,
+                filledLimitOrders,
+                cancelledMarketOrders,
+                cancelledStopOrders,
+                cancelledLimitOrders,
+                success,
+                failure,
+                maxCapitalRequired,
+                position.realizedPNL,
+                position.quantity,
+                position.cost,
+                position.MTM,
+                totalTradeLife)
             logging.info('xMan: evaluatePerformance: performance={}'.format(performance))
             self.portfolioSuccess += success
             self.portfolioFailure += failure
@@ -344,9 +380,21 @@ class xMan:
             self.portfolioRealizedPNL += position.realizedPNL
             self.portfolioCashBalance += (position.realizedPNL - position.cost)
             self.portfolioPositionCost += position.cost
+            self.portfolioPositionMTM += position.MTM
         self.portfolioMaxCapitalRequired = max(self.portfolioMaxCapitalRequired, self.portfolioPositionCost)
 
-        logging.info('xMan: evaluatePerformance: Portfolio portfolioRealizedPNL={}, portfolioCashBalance={}, portfolioPositionCost={}, portfolioMaxCapitalRequired={}, portfolioSuccess={}, portfolioFailure={}, portfolioSuccessRate={:.2f}%, portfolioAverageTradeLife={}'.format(self.portfolioRealizedPNL, self.portfolioCashBalance, self.portfolioPositionCost, self.portfolioMaxCapitalRequired, self.portfolioSuccess, self.portfolioFailure, (float(self.portfolioSuccess)*100)/(self.portfolioSuccess+self.portfolioFailure) if self.portfolioSuccess+self.portfolioFailure else float('nan'), self.portfolioTotalTradeLife/(self.portfolioSuccess+self.portfolioFailure) if self.portfolioSuccess+self.portfolioFailure > 0 else 'No Trades'))
+        logging.info('xMan: evaluatePerformance: Portfolio portfolioRealizedPNL={}, portfolioCashBalance={}, \
+        portfolioPositionCost={}, portfolioPositionMTM={}, portfolioMaxCapitalRequired={}, portfolioSuccess={}, \
+        portfolioFailure={}, portfolioSuccessRate={:.2f}%, portfolioAverageTradeLife={}'.format(
+            self.portfolioRealizedPNL,
+            self.portfolioCashBalance,
+            self.portfolioPositionCost,
+            self.portfolioPositionMTM,
+            self.portfolioMaxCapitalRequired,
+            self.portfolioSuccess,
+            self.portfolioFailure,
+            (float(self.portfolioSuccess)*100)/(self.portfolioSuccess+self.portfolioFailure) if self.portfolioSuccess+self.portfolioFailure else float('nan'),
+            self.portfolioTotalTradeLife/(self.portfolioSuccess+self.portfolioFailure) if self.portfolioSuccess+self.portfolioFailure > 0 else 'No Trades'))
 
     def describeTradesExecutedByDatetime(self):
         result = dict()
