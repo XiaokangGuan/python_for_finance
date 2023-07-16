@@ -8,6 +8,8 @@ import logging
 import datetime
 import numpy as np
 import yfinance as yf
+import pandas
+from utils.market_tick import MarketTick
 
 
 class DataHub:
@@ -53,3 +55,32 @@ class DataHub:
 
     def downloadDataFromYahoo(self, startDate, endDate, symbols):
         return self._downloadData(startDate, endDate, symbols)
+
+    def getDailyMarketTicks(self, startDate, endDate, symbols):
+        """
+        Dictionary representation {date: {symbol: market_tick}}
+        :param startDate: datetime.date
+        :param endDate: datetime.date
+        :param symbols: [string]
+        :return: outer key pandas timestamps as index
+        """
+        symbolData = self.downloadDataFromYahoo(startDate, endDate, symbols)
+        dtIndexes = pandas.date_range(startDate, endDate, freq='B')
+
+        perDay = dict()
+        for dtIdx in dtIndexes:
+            perSymbol = dict()
+            for symbol in symbolData.keys():
+                if dtIdx in symbolData[symbol].index:
+                    # Construct marketTick for this tradingDate
+                    open = symbolData[symbol].loc[dtIdx, 'Open']
+                    close = symbolData[symbol].loc[dtIdx, 'Close']
+                    high = symbolData[symbol].loc[dtIdx, 'High']
+                    low = symbolData[symbol].loc[dtIdx, 'Low']
+                    volume = symbolData[symbol].loc[dtIdx, 'Volume']
+                    marketTick = MarketTick(symbol, open, close, high, low, volume, dtIdx)
+                    perSymbol[symbol] = marketTick
+
+            perDay[dtIdx] = perSymbol
+
+        return perDay
