@@ -12,7 +12,7 @@ from utils.performance_evaluation import annualized_return, annualized_volatilit
 
 
 class xMan:
-    def __init__(self, initial_capital):
+    def __init__(self, initial_capital, risk_free):
         self.orders = []
         self.positions = []
         self.portfolio = Portfolio(initial_capital)
@@ -23,6 +23,7 @@ class xMan:
         self.portfolio_success = 0
         self.portfolio_failure = 0
         self.portfolio_total_trade_life = datetime.timedelta()
+        self.risk_free = risk_free
 
     def place_order(self, order):
         self.orders.append(order)
@@ -249,7 +250,7 @@ class xMan:
         daily_portfolio = pandas.Series([p.position_mtm + p.cash_balance for p in self.historical_portfolios])
         annual_return = annualized_return(daily_portfolio)
         annual_vol = annualized_volatility(daily_portfolio)
-        sharpe = sharpe_ratio(daily_portfolio, risk_free=0.0017625)
+        sharpe = sharpe_ratio(daily_portfolio, risk_free=self.risk_free)
 
         logging.info('xMan: evaluate_performance: Portfolio portfolio realized_pnl={}, portfolio cash_balance={}, '
                      'portfolio position_cost={}, portfolio position_mtm={}, portfolio_max_capital_required={}, '

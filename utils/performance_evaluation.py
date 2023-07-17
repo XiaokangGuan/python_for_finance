@@ -3,6 +3,9 @@ import numpy as np
 # Static risk free rates, i.e. 4 week T Bill yields
 # TODO: Source this programmatically
 T_Bill_Yields = {
+    2022: 1.61,
+    2021: 0.04,
+    2020: 0.35,
     2019: 2.08,
     2018: 1.81,
     2017: 0.83,
@@ -15,6 +18,10 @@ T_Bill_Yields = {
     2010: 0.11,
 }
 # Average 0.17625 %
+
+
+def get_risk_free_rate_by_year(year):
+    return T_Bill_Yields[year] / 100
 
 
 def annualized_return(daily_values, n=255):
