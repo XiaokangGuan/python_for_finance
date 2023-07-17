@@ -38,8 +38,7 @@ class Order:
         self.close_dt_idx = None
 
     def __str__(self):
-        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, fill_price={}, quantity_outstanding={}, \
-        quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, close_dt_idx={}>'.format(
+        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, fill_price={}, quantity_outstanding={}, quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, close_dt_idx={}>'.format(
             self.order_id, self.symbol, self.direction, self.type, self.price, self.fill_price,
             self.quantity_outstanding, self.quantity_filled, self.state, self.commission, self.link_id, self.open_dt_idx,
             self.close_dt_idx)

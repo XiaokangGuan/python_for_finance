@@ -1,11 +1,14 @@
+import copy
 import uuid
 import logging
 import datetime
+import pandas
 from utils.order import ORDER_STATE_NEW, ORDER_STATE_PARTIALLY_FILLED, ORDER_STATE_FULLY_FILLED, ORDER_STATE_CANCELLED, \
     ORDER_TYPE_MARKET, ORDER_TYPE_LIMIT, ORDER_TYPE_STOP, ORDER_DIRECTION_BUY, ORDER_DIRECTION_SELL
 from utils.position import Position
 from utils.portfolio import Portfolio
 from utils.performance import Performance
+from utils.performance_evaluation import annualized_return, annualized_volatility, sharpe_ratio
 
 
 class xMan:
@@ -13,6 +16,7 @@ class xMan:
         self.orders = []
         self.positions = []
         self.portfolio = Portfolio(initial_capital)
+        self.historical_portfolios = []
         self.symbol_performances = []
         self.initial_capital = initial_capital
         self.portfolio_max_capital_required = 0
@@ -127,6 +131,15 @@ class xMan:
         position.update_mtm(market_tick.close)
 
     def run_on_market_ticks(self, market_ticks_by_symbol):
+        """
+        Daily run, from trading open to close.
+        - Take in all market ticks for a day.
+        - Execute all existing orders.
+        - Update positions and portfolio MTM.
+        - Record daily EOD portfolio values for performance evaluation purpose.
+        :param market_ticks_by_symbol:
+        :return:
+        """
         for symbol, market_tick in market_ticks_by_symbol.items():
             # Execute existing orders from previous tradingPeriod. In reality, this happens during current tradingPeriod.
             self.execute_orders_on_market_tick(market_tick)
@@ -134,6 +147,9 @@ class xMan:
             self.update_mtm_on_market_tick(market_tick)
             # Refresh portfolio
             self.portfolio.refresh(self.positions)
+
+        # Record daily portfolio
+        self.historical_portfolios.append(copy.deepcopy(self.portfolio))
 
     def cancel_linked_orders(self, order, datetime):
         """If one order get fully filled, other linked orders will be cancelled"""
@@ -160,6 +176,7 @@ class xMan:
         self.portfolio_success = 0
         self.portfolio_failure = 0
         self.portfolio_total_trade_life = datetime.timedelta()
+
         for symbol in self.get_all_symbols():
             outstanding_market_orders, outstanding_stop_orders, outstanding_limit_orders, filled_market_orders, \
             filled_stop_orders, filled_limit_orders, cancelled_market_orders, cancelled_stop_orders, \
@@ -222,11 +239,23 @@ class xMan:
             self.portfolio_success += success
             self.portfolio_failure += failure
             self.portfolio_total_trade_life += total_trade_life
-        self.portfolio_max_capital_required = max(self.portfolio_max_capital_required, self.portfolio.position_cost)
 
-        logging.info('xMan: evaluate_performance: Portfolio portfolio realized_pnl={}, portfolio cash_balance={}, \
-        portfolio position_cost={}, portfolio position_mtm={}, portfolio_max_capital_required={}, portfolio_success={}, \
-        portfolio_failure={}, portfolio_successRate={:.2f}%, portfolio_average_trade_ife={}'.format(
+        # Portfolio metrics
+        self.portfolio_max_capital_required = max(self.portfolio_max_capital_required, self.portfolio.position_cost)
+        portfolio_success_rate = (float(self.portfolio_success) * 100) / (
+                self.portfolio_success + self.portfolio_failure) if self.portfolio_success + self.portfolio_failure else float('nan')
+        portfolio_avg_trade_life = self.portfolio_total_trade_life / (
+                self.portfolio_success + self.portfolio_failure) if self.portfolio_success + self.portfolio_failure > 0 else 'No Trades'
+        daily_portfolio = pandas.Series([p.position_mtm + p.cash_balance for p in self.historical_portfolios])
+        annual_return = annualized_return(daily_portfolio)
+        annual_vol = annualized_volatility(daily_portfolio)
+        sharpe = sharpe_ratio(daily_portfolio, risk_free=0.0017625)
+
+        logging.info('xMan: evaluate_performance: Portfolio portfolio realized_pnl={}, portfolio cash_balance={}, '
+                     'portfolio position_cost={}, portfolio position_mtm={}, portfolio_max_capital_required={}, '
+                     'portfolio_success={}, portfolio_failure={}, portfolio_successRate={:.2f}%, '
+                     'portfolio_average_trade_life={}, portfolio annual return={}, portfolio annual vol={}, '
+                     'Sharpe ratio={}'.format(
             self.portfolio.realized_pnl,
             self.portfolio.cash_balance,
             self.portfolio.position_cost,
@@ -234,11 +263,11 @@ class xMan:
             self.portfolio_max_capital_required,
             self.portfolio_success,
             self.portfolio_failure,
-            (float(self.portfolio_success) * 100) / (
-                        self.portfolio_success + self.portfolio_failure) if self.portfolio_success + self.portfolio_failure else float(
-                'nan'),
-            self.portfolio_total_trade_life / (
-                        self.portfolio_success + self.portfolio_failure) if self.portfolio_success + self.portfolio_failure > 0 else 'No Trades'))
+            portfolio_success_rate,
+            portfolio_avg_trade_life,
+            annual_return,
+            annual_vol,
+            sharpe))
 
     def describe_trades_executed_by_datetime(self):
         result = dict()

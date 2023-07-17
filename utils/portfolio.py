@@ -6,7 +6,7 @@ class Portfolio:
     def __init__(self, capital):
         self.initial_capital = capital
         self.realized_pnl = 0
-        self.cash_balance = 0
+        self.cash_balance = capital
         self.position_cost = 0
         self.position_mtm = 0
 

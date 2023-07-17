@@ -25,17 +25,28 @@ class Performance:
         self.total_trade_life = datetime.timedelta()
 
     def __str__(self):
-        return 'Performance<symbol={}, outstanding_market_orders={}, outstanding_stop_orders={}, outstanding_limit_\
-        orders={}, filled_market_orders={}, filled_stop_orders={}, filled_limit_orders={}, cancelled_market_orders={}, \
-        cancelled_stop_orders={}, cancelled_limit_orders={}, success={}, failure={}, successRate={:.2f}%, \
-        max_capital_required={}, realized_pnl={}, position_quantity={}, position_cost={}, position_mtm={}, \
-        total_trade_life={}, averageTradeLife={}>'.format(
-            self.symbol, self.outstanding_market_orders, self.outstanding_stop_orders, self.outstanding_limit_orders,
-            self.filled_market_orders, self.filled_stop_orders, self.filled_limit_orders, self.cancelled_market_orders,
-            self.cancelled_stop_orders, self.cancelled_limit_orders, self.success, self.failure,
-            float(self.success * 100) / (self.success + self.failure) if self.success + self.failure > 0 else float(
-                'nan'),
-            self.max_capital_required, self.realized_pnl, self.position_quantity, self.position_cost, self.position_mtm,
+        return 'Performance<symbol={}, outstanding_market_orders={}, outstanding_stop_orders={}, ' \
+               'outstanding_limit_orders={}, filled_market_orders={}, filled_stop_orders={}, filled_limit_orders={}, ' \
+               'cancelled_market_orders={}, cancelled_stop_orders={}, cancelled_limit_orders={}, success={}, ' \
+               'failure={}, successRate={:.2f}%, max_capital_required={}, realized_pnl={}, position_quantity={}, ' \
+               'position_cost={}, position_mtm={}, total_trade_life={}, averageTradeLife={}>'.format(
+            self.symbol,
+            self.outstanding_market_orders,
+            self.outstanding_stop_orders,
+            self.outstanding_limit_orders,
+            self.filled_market_orders,
+            self.filled_stop_orders,
+            self.filled_limit_orders,
+            self.cancelled_market_orders,
+            self.cancelled_stop_orders,
+            self.cancelled_limit_orders,
+            self.success, self.failure,
+            float(self.success * 100) / (self.success + self.failure) if self.success + self.failure > 0 else float('nan'),
+            self.max_capital_required,
+            self.realized_pnl,
+            self.position_quantity,
+            self.position_cost,
+            self.position_mtm,
             self.total_trade_life,
             self.total_trade_life / (self.success + self.failure) if self.success + self.failure > 0 else 'No Trades')
 
