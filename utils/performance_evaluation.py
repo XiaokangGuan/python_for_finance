@@ -3,6 +3,7 @@ import numpy as np
 # Static risk free rates, i.e. 4 week T Bill yields
 # TODO: Source this programmatically
 T_Bill_Yields = {
+    2023: 4.64,
     2022: 1.61,
     2021: 0.04,
     2020: 0.35,
@@ -59,4 +60,4 @@ def sharpe_ratio(daily_values, n=255, risk_free=0.0017625):
     daily_returns = daily_values.pct_change().dropna()
     mean = daily_returns.mean() * n - risk_free
     sigma = daily_returns.std() * np.sqrt(n)
-    return mean / sigma
+    return mean / sigma if sigma > 0 else float('nan')

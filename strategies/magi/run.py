@@ -19,15 +19,15 @@ Flow:
 2. Today's MarketTick feeds to xMan, for order execution, EOD MTM, EOD performance etc.
 3. After EOD, today's MarketTick feeds to Magi to run strategy, which send orders to xMan.
 """
-
+import copy
 import datetime
 import logging
 import pandas
-from magi import Magi
-from x_man import xMan
+from strategies.magi.magi import Magi
+from strategies.magi.x_man import xMan
+from strategies.magi.config import Config
 from utils.data_hub import DataHub
 from utils.performance_evaluation import get_risk_free_rate_by_year
-
 
 STOCKS_500 = ['ABT', 'ABBV', 'ACN', 'ACE', 'ADBE', 'ADT', 'AAP', 'AES', 'AET', 'AFL', 'AMG', 'A', 'GAS', 'APD', 'ARG', 'AKAM', 'AA', 'AGN', 'ALXN', 'ALLE', 'ADS', 'ALL', 'ALTR', 'MO', 'AMZN', 'AEE', 'AAL', 'AEP', 'AXP', 'AIG', 'AMT', 'AMP', 'ABC', 'AME', 'AMGN', 'APH', 'APC', 'ADI', 'AON', 'APA', 'AIV', 'AMAT', 'ADM', 'AIZ', 'T', 'ADSK', 'ADP', 'AN', 'AZO', 'AVGO', 'AVB', 'AVY', 'BHI', 'BLL', 'BAC', 'BK', 'BCR', 'BXLT', 'BAX', 'BBT', 'BDX', 'BBBY', 'BRK-B', 'BBY', 'BLX', 'HRB', 'BA', 'BWA', 'BXP', 'BSK', 'BMY', 'BRCM', 'BF-B', 'CHRW', 'CA', 'CVC', 'COG', 'CAM', 'CPB', 'COF', 'CAH', 'HSIC', 'KMX', 'CCL', 'CAT', 'CBG', 'CBS', 'CELG', 'CNP', 'CTL', 'CERN', 'CF', 'SCHW', 'CHK', 'CVX', 'CMG', 'CB', 'CI', 'XEC', 'CINF', 'CTAS', 'CSCO', 'C', 'CTXS', 'CLX', 'CME', 'CMS', 'COH', 'KO', 'CCE', 'CTSH', 'CL', 'CMCSA', 'CMA', 'CSC', 'CAG', 'COP', 'CNX', 'ED', 'STZ', 'GLW', 'COST', 'CCI', 'CSX', 'CMI', 'CVS', 'DHI', 'DHR', 'DRI', 'DVA', 'DE', 'DLPH', 'DAL', 'XRAY', 'DVN', 'DO', 'DTV', 'DFS', 'DISCA', 'DISCK', 'DG', 'DLTR', 'D', 'DOV', 'DOW', 'DPS', 'DTE', 'DD', 'DUK', 'DNB', 'ETFC', 'EMN', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'EMC', 'EMR', 'ENDP', 'ESV', 'ETR', 'EOG', 'EQT', 'EFX', 'EQIX', 'EQR', 'ESS', 'EL', 'ES', 'EXC', 'EXPE', 'EXPD', 'ESRX', 'XOM', 'FFIV', 'FB', 'FAST', 'FDX', 'FIS', 'FITB', 'FSLR', 'FE', 'FSIV', 'FLIR', 'FLS', 'FLR', 'FMC', 'FTI', 'F', 'FOSL', 'BEN', 'FCX', 'FTR', 'GME', 'GPS', 'GRMN', 'GD', 'GE', 'GGP', 'GIS', 'GM', 'GPC', 'GNW', 'GILD', 'GS', 'GT', 'GOOGL', 'GOOG', 'GWW', 'HAL', 'HBI', 'HOG', 'HAR', 'HRS', 'HIG', 'HAS', 'HCA', 'HCP', 'HCN', 'HP', 'HES', 'HPQ', 'HD', 'HON', 'HRL', 'HSP', 'HST', 'HCBK', 'HUM', 'HBAN', 'ITW', 'IR', 'INTC', 'ICE', 'IBM', 'IP', 'IPG', 'IFF', 'INTU', 'ISRG', 'IVZ', 'IRM', 'JEC', 'JBHT', 'JNJ', 'JCI', 'JOY', 'JPM', 'JNPR', 'KSU', 'K', 'KEY', 'GMCR', 'KMB', 'KIM', 'KMI', 'KLAC', 'KSS', 'KRFT', 'KR', 'LB', 'LLL', 'LH', 'LRCX', 'LM', 'LEG', 'LEN', 'LVLT', 'LUK', 'LLY', 'LNC', 'LLTC', 'LMT', 'L', 'LOW', 'LYB', 'MTB', 'MAC', 'M', 'MNK', 'MRO', 'MPC', 'MAR', 'MMC', 'MLM', 'MAS', 'MA', 'MAT', 'MKC', 'MCD', 'MHFI', 'MCK', 'MJN', 'MMV', 'MDT', 'MRK', 'MET', 'KORS', 'MCHP', 'MU', 'MSFT', 'MHK', 'TAP', 'MDLZ', 'MON', 'MNST', 'MCO', 'MS', 'MOS', 'MSI', 'MUR', 'MYL', 'NDAQ', 'NOV', 'NAVI', 'NTAP', 'NFLX', 'NWL', 'NFX', 'NEM', 'NWSA', 'NEE', 'NLSN', 'NKE', 'NI', 'NE', 'NBL', 'JWN', 'NSC', 'NTRS', 'NOC', 'NRG', 'NUE', 'NVDA', 'ORLY', 'OXY', 'OMC', 'OKE', 'ORCL', 'OI', 'PCAR', 'PLL', 'PH', 'PDCO', 'PAYX', 'PNR', 'PBCT', 'POM', 'PEP', 'PKI', 'PRGO', 'PFE', 'PCG', 'PM', 'PSX', 'PNW', 'PXD', 'PBI', 'PCL', 'PNC', 'RL', 'PPG', 'PPL', 'PX', 'PCP', 'PCLN', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PEG', 'PSA', 'PHM', 'PVH', 'QRVO', 'PWR', 'QCOM', 'DGX', 'RRC', 'RTN', 'O', 'RHT', 'REGN', 'RF', 'RSG', 'RAI', 'RHI', 'ROK', 'COL', 'ROP', 'ROST', 'RLC', 'R', 'CRM', 'SNDK', 'SCG', 'SLB', 'SNI', 'STX', 'SEE', 'SRE', 'SHW', 'SIAL', 'SPG', 'SWKS', 'SLG', 'SJM', 'SNA', 'SO', 'LUV', 'SWN', 'SE', 'STJ', 'SWK', 'SPLS', 'SBUX', 'HOT', 'STT', 'SRCL', 'SYK', 'STI', 'SYMC', 'SYY', 'TROW', 'TGT', 'TEL', 'TE', 'TGNA', 'THC', 'TDC', 'TSO', 'TXN', 'TXT', 'HSY', 'TRV', 'TMO', 'TIF', 'TWX', 'TWC', 'TJK', 'TMK', 'TSS', 'TSCO', 'RIG', 'TRIP', 'FOXA', 'TSN', 'TYC', 'UA', 'UNP', 'UNH', 'UPS', 'URI', 'UTX', 'UHS', 'UNM', 'URBN', 'VFC', 'VLO', 'VAR', 'VTR', 'VRSN', 'VZ', 'VRTX', 'VIAB', 'V', 'VNO', 'VMC', 'WMT', 'WBA', 'DIS', 'WM', 'WAT', 'ANTM', 'WFC', 'WDC', 'WU', 'WY', 'WHR', 'WFM', 'WMB', 'WEC', 'WYN', 'WYNN', 'XEL', 'XRX', 'XLNX', 'XL', 'XYL', 'YHOO', 'YUM', 'ZBH', 'ZION', 'ZTS']
 STOCKS_1JAN2014_1JAN2018_SUCCESS_RATE_60 = ['YUM', 'VRTX', 'GIS', 'GD', 'BRK-B', 'MAS', 'PKI', 'SNA', 'FOXA', 'XYL', 'TSN', 'BEN', 'CMI', 'CME', 'CMS', 'MAR', 'VLO', 'HUM', 'BLX', 'FFIV', 'BLL', 'HCA', 'HCN', 'NFX', 'MA', 'MO', 'MS', 'AMGN', 'FB', 'COST', 'DOV', 'SCHW', 'FCX', 'DFS', 'V', 'AVY', 'ALL', 'NTAP', 'MMV', 'RLC', 'SO', 'JNPR', 'CAT', 'BAC', 'GS', 'CAG', 'LH', 'PGR', 'HIG', 'CELG', 'ZION', 'STI', 'STZ', 'PNR', 'IVZ', 'PNC', 'AON', 'PRU', 'URBN', 'HRS', 'HRL', 'IPG', 'RHT', 'APC', 'APD', 'KSU', 'WFC', 'NVDA', 'PEG', 'AVGO', 'RTN', 'ED', 'JNJ', 'EW', 'STT', 'LUV', 'ADSK', 'ECL', 'NUE', 'EXPE', 'EXPD', 'ETFC', 'CLX', 'DTE', 'UNH', 'BBT', 'OMC', 'KO', 'LNC', 'KEY', 'KLAC', 'BF-B', 'SWK', 'RSG', 'AAL', 'TGT', 'HBAN', 'INTC', 'MLM', 'INTU', 'ALXN', 'DHR', 'JPM', 'R', 'NFLX', 'WM', 'WY', 'HST', 'THC', 'SYK', 'LEG', 'SYY', 'AET', 'GRMN', 'ESRX', 'SWKS', 'CTAS', 'EMR', 'FDX', 'PG', 'CTXS', 'PM', 'EFX', 'XRX', 'MCHP', 'DVA', 'ETN', 'ZBH', 'DG', 'CB', 'CA', 'CF', 'CHRW', 'SRE', 'GNW', 'BXP', 'AIV', 'DIS', 'PPG', 'MNST', 'NSC', 'OKE', 'IP', 'IR', 'URI', 'PWR', 'CSCO', 'BA', 'BK', 'DRI', 'CCL', 'CCI', 'CCE', 'DTV', 'MYL', 'D', 'PEP', 'T', 'WMB', 'VRSN', 'OI', 'NTRS', 'HP', 'HD', 'AMG', 'TMO', 'AMT', 'ICE', 'BDX', 'MPC', 'MDLZ', 'NEE', 'ACN', 'NI', 'TEL', 'NE', 'NBL', 'FLS', 'ADS', 'ADP', 'GILD', 'BSK', 'GME', 'ADM', 'XEC', 'XEL', 'LEN', 'EBAY', 'MET', 'TXN', 'DAL', 'ORCL', 'ESV', 'ESS', 'HON', 'ABBV', 'ISRG', 'PFG']
@@ -39,29 +39,15 @@ STOCKS_SELECTED = ['NFLX', 'YUM', 'CCE', 'WY', 'VRTX', 'MYL', 'GIS', 'D', 'DHR',
 STOCKS_ERROR = ['ACE', 'ADT', 'GAS', 'ARG', 'BHI', 'BXLT', 'BRCM', 'CVC', 'CAM', 'COH', 'CSC', 'DOW', 'DD', 'EMC', 'FSIV', 'HAR', 'HON', 'HSP', 'HCBK', 'JOY', 'GMCR', 'KRFT', 'LLTC', 'MHFI', 'MJN', 'PLL', 'POM', 'PCL', 'PCP', 'RAI', 'SNDK', 'SIAL', 'STJ', 'SPLS', 'HOT', 'TE', 'TSO', 'TWC', 'TJK', 'TYC', 'WFM', 'YHOO']
 SYMBOLS = list(set(STOCKS_1JAN2014_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2015_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2016_1JAN2018_SUCCESS_RATE_60) & set(STOCKS_1JAN2017_1JAN2018_SUCCESS_RATE_60))
 
-START_DATE = datetime.date(2022, 1, 1)
+START_DATE = datetime.date(2020, 1, 1)
 END_DATE = datetime.date(2022, 12, 31)
 CAPITAL = 10000
+SUCCESS_THRESHOLD = 0.6
 
 
-def main(
-        symbols,
-        start_date,
-        end_date,
-        capital,
-):
-    """Main function"""
-    logging.basicConfig(filename='logs/Magi_{0}.log'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')), format='%(levelname)s: %(message)s', level=logging.INFO)
-
-    # Prepare MarketTicks
-    data_hub = DataHub()
-    market_ticks_by_day = data_hub.getDailyMarketTicks(start_date, end_date, symbols)
-    # TODO: Need better pick of risk free rate
-    risk_free = get_risk_free_rate_by_year(start_date.year)
-    x_man = xMan(capital, risk_free)
-    magi = Magi(capital, x_man)
-
-    for dt_idx in pandas.date_range(start_date, end_date, freq='B'):
+def execute(market_ticks_by_day, x_man, magi):
+    dt_indices = sorted(list(market_ticks_by_day.keys()), reverse=False)
+    for dt_idx in dt_indices:
         logging.info('============================================================')
         logging.info(dt_idx)
 
@@ -90,11 +76,80 @@ def main(
     x_man.describe_trades_executed_by_datetime()
 
 
+def train(
+        symbol_universe,
+        start_date,
+        end_date,
+        capital,
+        success_threshold,
+        model_name,
+):
+    logging.basicConfig(
+        filename='logs/train_{}_{}.log'.format(model_name, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')),
+        format='%(levelname)s: %(message)s',
+        level=logging.INFO)
+
+    # Prepare components
+    data_hub = DataHub()
+    market_ticks_by_day = data_hub.getDailyMarketTicks(start_date, end_date, symbol_universe)
+    # TODO: Need better pick of risk free rate
+    risk_free = get_risk_free_rate_by_year(start_date.year)
+    x_man = xMan(capital, risk_free)
+    config = Config(symbols=symbol_universe)
+    magi = Magi(capital, x_man, config)
+
+    # Execute daily
+    execute(market_ticks_by_day, x_man, magi)
+
+    # Calibrate parameters and persist
+    config_symbols = []
+    for p in x_man.symbol_performances:
+        if p.success + p.failure > 0 and p.success / (p.success + p.failure) > success_threshold:
+            config_symbols.append(p.symbol)
+    config_trained = copy.deepcopy(config)
+    config_trained.update(symbols=config_symbols)
+    config_trained.log()
+    config_trained.save(model_name)
+
+
+def test(
+        start_date,
+        end_date,
+        capital,
+        model_name,
+):
+    logging.basicConfig(
+        filename='logs/test_{}_{}.log'.format(model_name, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')),
+        format='%(levelname)s: %(message)s',
+        level=logging.INFO)
+
+    # Prepare components
+    config = Config()
+    config.load(model_name)
+    data_hub = DataHub()
+    market_ticks_by_day = data_hub.getDailyMarketTicks(start_date, end_date, config.symbols)
+    # TODO: Need better pick of risk free rate
+    risk_free = get_risk_free_rate_by_year(start_date.year)
+    x_man = xMan(capital, risk_free)
+    magi = Magi(capital, x_man, config)
+
+    # Execute daily
+    execute(market_ticks_by_day, x_man, magi)
+
+
 if __name__ == '__main__':
     """Entry point"""
-    main(
-        SYMBOLS,
-        START_DATE,
-        END_DATE,
+    # train(
+    #     STOCKS_500,
+    #     START_DATE,
+    #     END_DATE,
+    #     CAPITAL,
+    #     SUCCESS_THRESHOLD,
+    #     '20200101_20221231_60'
+    # )
+    test(
+        datetime.date(2023, 1, 1),
+        datetime.date.today(),
         CAPITAL,
+        '20200101_20221231_60'
     )
