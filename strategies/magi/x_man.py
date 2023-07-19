@@ -80,6 +80,7 @@ class xMan:
 
     def execute_limit_order(self, order, market_tick):
         """Execute limit order, update position"""
+        # TODO: Being conservative here. E.g. Open price > Sell limit price, fill price should be Open price.
         logging.debug('xMan: execute_limit_order: Check order={}, market_tick={}'.format(order, market_tick))
         if (order.direction == ORDER_DIRECTION_BUY and order.price >= market_tick.low) or (
                 order.direction == ORDER_DIRECTION_SELL and order.price <= market_tick.high):

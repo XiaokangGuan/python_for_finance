@@ -111,6 +111,8 @@ def train(
     config_trained.log()
     config_trained.save(model_name)
 
+    return magi
+
 
 def test(
         start_date,
@@ -135,6 +137,8 @@ def test(
 
     # Execute daily
     execute(market_ticks_by_day, x_man, magi)
+
+    return magi
 
 
 if __name__ == '__main__':
