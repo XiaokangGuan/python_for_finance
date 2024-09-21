@@ -17,13 +17,15 @@ COMMISSION_PER_SHARE = 0.005
 
 
 class Order:
-    def __init__(self, symbol, direction, type, price, quantity, open_dt_idx):
+    def __init__(self, symbol, direction, type, price, quantity, open_dt_idx, pct_from_market=None):
         self.order_id = uuid.uuid4()
         self.symbol = symbol
         self.direction = direction
         self.type = type
         # this is the price submitted when placing order
         self.price = price
+        # this is the limit / stop percentage from market order execution price
+        self.pct_from_market = pct_from_market
         # this is the average price filling the order
         self.fill_price = 0
         # this quantity should be non-negative
@@ -38,8 +40,8 @@ class Order:
         self.close_dt_idx = None
 
     def __str__(self):
-        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, fill_price={}, quantity_outstanding={}, quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, close_dt_idx={}>'.format(
-            self.order_id, self.symbol, self.direction, self.type, self.price, self.fill_price,
+        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, pct_from_market={}, fill_price={}, quantity_outstanding={}, quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, close_dt_idx={}>'.format(
+            self.order_id, self.symbol, self.direction, self.type, self.price, self.pct_from_market, self.fill_price,
             self.quantity_outstanding, self.quantity_filled, self.state, self.commission, self.link_id, self.open_dt_idx,
             self.close_dt_idx)
 

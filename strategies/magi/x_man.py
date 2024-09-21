@@ -70,7 +70,9 @@ class xMan:
         quantity_changed = order.quantity_outstanding if order.direction == ORDER_DIRECTION_BUY else -order.quantity_outstanding
         order.fill(market_tick.open, order.quantity_outstanding, market_tick.dt_idx)
         if order.state == ORDER_STATE_FULLY_FILLED:
-            self.cancel_linked_orders(order, market_tick.dt_idx)
+            #self.cancel_linked_orders(order, market_tick.dt_idx)
+            # Update limit / stop price of linked orders
+            self.update_limit_stop_price_on_market_order_filled(order, market_tick.open)
 
         position = self.get_position_by_symbol(order.symbol)
         if not position:
@@ -153,11 +155,20 @@ class xMan:
         # Record daily portfolio
         self.historical_portfolios.append(copy.deepcopy(self.portfolio))
 
+    def update_limit_stop_price_on_market_order_filled(self, order, price):
+        """ Update limit / stop price of linked orders """
+        linked_orders = self.get_orders_by_link_id(order.link_id)
+        for linkedOrder in linked_orders:
+            if linkedOrder.order_id != order.order_id:
+                if linkedOrder.type in [ORDER_TYPE_LIMIT, ORDER_TYPE_STOP]:
+                    linkedOrder.price = price * (1 + linkedOrder.pct_from_market)
+                    logging.info('Xman: update_limit_stop_price_on_market_order_filled: Updated order={}'.format(linkedOrder))
+
     def cancel_linked_orders(self, order, datetime):
         """If one order get fully filled, other linked orders will be cancelled"""
         linked_orders = self.get_orders_by_link_id(order.link_id)
         for linkedOrder in linked_orders:
-            if linkedOrder.order_id != order.order_id:
+            if linkedOrder.order_id != order.order_id and linkedOrder.state == ORDER_STATE_NEW:
                 linkedOrder.cancel(datetime)
 
     def link_orders(self, orders):
@@ -237,7 +248,7 @@ class xMan:
                 position.cost,
                 position.mtm,
                 total_trade_life)
-            logging.info('xMan: evaluate_performance: Symbol performance={}'.format(symbol_performance))
+            logging.debug('xMan: evaluate_performance: Symbol performance={}'.format(symbol_performance))
             self.portfolio_success += success
             self.portfolio_failure += failure
             self.portfolio_total_trade_life += total_trade_life

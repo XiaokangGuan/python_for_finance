@@ -1,7 +1,7 @@
 import logging
 import yaml
 
-SD_PERIOD = 22
+SD_PERIOD = 66
 # This is for trading signal logic
 LOOK_BACK_PERIOD = 22
 # This allows to trade on next day's open
@@ -9,9 +9,11 @@ LOOK_FORWARD_PERIOD = 0
 MA_SHORT_PERIOD = 5
 MA_LONG_PERIOD = SD_PERIOD
 TRIGGER_DISTANCE = 3
-STOP_ORDER_DISTANCE = 2
-LIMIT_ORDER_DISTANCE = 2
+STOP_ORDER_DISTANCE = 1
+LIMIT_ORDER_DISTANCE = 1
 ORDER_LIMIT = 1000
+LIMIT_ORDER_PCT = 0.2
+STOP_ORDER_PCT = -0.2
 
 
 class Config:
@@ -25,7 +27,9 @@ class Config:
                  trigger_distance=TRIGGER_DISTANCE,
                  stop_order_distance=STOP_ORDER_DISTANCE,
                  limit_order_distance=LIMIT_ORDER_DISTANCE,
-                 order_limit=ORDER_LIMIT,):
+                 order_limit=ORDER_LIMIT,
+                 limit_order_pct=LIMIT_ORDER_PCT,
+                 stop_order_pct=STOP_ORDER_PCT):
         self.symbols = symbols
         self.sd_period = sd_period
         self.look_back_period = look_back_period
@@ -36,6 +40,8 @@ class Config:
         self.stop_order_distance = stop_order_distance
         self.limit_order_distance = limit_order_distance
         self.order_limit = order_limit
+        self.limit_order_pct = limit_order_pct
+        self.stop_order_pct = stop_order_pct
 
     def log(self):
         logging.info('============================================================')
@@ -50,6 +56,8 @@ class Config:
         logging.info('STOP_ORDER_DISTANCE: {}'.format(self.stop_order_distance))
         logging.info('LIMIT_ORDER_DISTANCE: {}'.format(self.limit_order_distance))
         logging.info('ORDER_LIMIT: {}'.format(self.order_limit))
+        logging.info('LIMIT_ORDER_PCT: {}'.format(self.limit_order_pct))
+        logging.info('STOP_ORDER_PCT: {}'.format(self.stop_order_pct))
         logging.info('============================================================')
 
     def update(self, **kwargs):
