@@ -126,7 +126,7 @@ def test(
     # TODO: Need better pick of risk free rate
     risk_free = get_risk_free_rate_by_year(start_date.year)
     x_man = xMan(capital, risk_free)
-    magi = Magi(capital, x_man, config, trading_calendar)
+    magi = Magi(capital, x_man, config, trading_calendar, model_name)
 
     # Execute daily
     execute(market_ticks_by_day, x_man, magi)
