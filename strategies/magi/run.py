@@ -121,10 +121,12 @@ def test(
     config.load(model_name)
     data_hub = DataHub()
     market_ticks_by_day = data_hub.getDailyMarketTicks(start_date, end_date, config.symbols)
+    # Some strategies need to know trading calendar
+    trading_calendar = sorted(list(market_ticks_by_day.keys()), reverse=False)
     # TODO: Need better pick of risk free rate
     risk_free = get_risk_free_rate_by_year(start_date.year)
     x_man = xMan(capital, risk_free)
-    magi = Magi(capital, x_man, config)
+    magi = Magi(capital, x_man, config, trading_calendar)
 
     # Execute daily
     execute(market_ticks_by_day, x_man, magi)
@@ -143,7 +145,7 @@ if __name__ == '__main__':
     #     '20200101_20221231_100_Mean_Rev'
     # )
     test(
-        datetime.date(2023, 1, 1),
+        datetime.date(2015, 1, 1),
         datetime.date.today(),
         CAPITAL,
         'focus_stock'

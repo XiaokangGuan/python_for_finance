@@ -67,6 +67,9 @@ class DataHub:
         symbolData = self.downloadDataFromYahoo(startDate, endDate, symbols)
         dtIndexes = pandas.date_range(startDate, endDate, freq='B')
 
+        # Add daily percentage changes
+        pctChange = dict([(sym, df.pct_change(1)) for sym, df in symbolData.items()])
+
         perDay = dict()
         for dtIdx in dtIndexes:
             perSymbol = dict()
@@ -79,7 +82,11 @@ class DataHub:
                     high = symbolData[symbol].loc[dtIdx, ('High', symbol)]
                     low = symbolData[symbol].loc[dtIdx, ('Low', symbol)]
                     volume = symbolData[symbol].loc[dtIdx, ('Volume', symbol)]
-                    marketTick = MarketTick(symbol, open, close, high, low, volume, dtIdx)
+
+                    # Daily close price return
+                    close_return = pctChange[symbol].loc[dtIdx, ('Close', symbol)]
+
+                    marketTick = MarketTick(symbol, open, close, high, low, volume, close_return, dtIdx)
                     perSymbol[symbol] = marketTick
 
             perDay[dtIdx] = perSymbol
