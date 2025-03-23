@@ -9,15 +9,24 @@ class Magi:
                  capital,
                  x_man,
                  config,
-                 trading_calendar):
+                 trading_calendar,
+                 model_name):
         self.capital = capital
         self.x_man = x_man
         self.symbol_data = dict()
         self.capital_used = 0
         self.trading_calendar = trading_calendar
+        self.model_name = model_name
+
         # Strategy config
         self.config = config
         self.config.log()
+
+        # Model map
+        self.MODEL_MAP = {
+            'focus_stock': self._run_mispricing,
+            'price_mean_reversion': self._run_price_mean_reversion,
+        }
 
     def __str__(self):
         return 'He is my shield!'
@@ -38,7 +47,27 @@ class Magi:
                         self.config.order_limit))
         return math.floor(limit / price)
 
-    def run_strategy_on_market_tick(self, market_tick):
+    def get_stop_pct_from_market(self, ma, sd):
+        """
+        If stop_order_pct is manually set, then take it.
+        Otherwise calculate from stop_order_distance.
+        """
+        if self.config.stop_order_pct is not None:
+            return self.config.stop_order_pct
+        else:
+            return - self.config.stop_order_distance * sd / ma
+
+    def get_limit_pct_from_market(self, ma, sd):
+        """
+        If limit_order_pct is manually set, then take it.
+        Otherwise calculate from limit_order_distance.
+        """
+        if self.config.limit_order_pct is not None:
+            return self.config.limit_order_pct
+        else:
+            return self.config.limit_order_distance * sd / ma
+
+    def _run_mispricing(self, market_tick):
         """
         Run strategy for the market_tick given for a specific symbol.
         Signal is based on daily price returns.
@@ -102,15 +131,15 @@ class Magi:
             else:
                 logging.info('Magi: run_strategy_on_market_tick: TRIGGER BUY, but cannot trade due to quantity=0, market_tick={}'.format(market_tick))
 
-    def run_strategy_on_market_tick_1(self, market_tick):
+    def _run_price_mean_reversion(self, market_tick):
         """
         Run strategy for the market_tick given for a specific symbol.
-        Signal is based on daily price returns.
+        Signal is based on daily stock price.
         The strategy probably also depends on past market_ticks, which need to be looked up in self.symbol_data
         Place orders based on strategy signals
         """
         # Update timeseries on daily market_tick Close
-        ts = pandas.Series(data=[market_tick.close_return], index=[market_tick.dt_idx])
+        ts = pandas.Series(data=[market_tick.close], index=[market_tick.dt_idx])
         if self.symbol_data.get(market_tick.symbol, None) is None:
             self.symbol_data[market_tick.symbol] = ts
         else:
@@ -132,8 +161,8 @@ class Magi:
         curr_price = market_tick.close
         curr_return = market_tick.close_return
 
-        logging.debug('Magi: run_strategy_on_market_tick: curr_price={}, curr_return={}, ma_long={}, sd={}, distance={}, ma_short={}'.format(curr_price, curr_return, ma_long, sd, (curr_return - ma_long) / sd, ma_short))
-        if curr_return < ma_long - sd * self.config.trigger_distance:
+        logging.info('Magi: run_strategy_on_market_tick: curr_price={}, curr_return={}, ma_long={}, sd={}, distance={}, ma_short={}'.format(curr_price, curr_return, ma_long, sd, (curr_price - ma_long) / sd, ma_short))
+        if curr_price < ma_long - sd * self.config.trigger_distance:
             quantity = self.get_order_size(curr_price)
 
             # TODO: Without knowledge of the next market_tick, we place orders based on current market_tick
@@ -153,7 +182,7 @@ class Magi:
                                    float('nan'),
                                    quantity,
                                    market_tick.dt_idx,
-                                   pct_from_market=self.config.stop_order_pct)
+                                   pct_from_market=self.get_stop_pct_from_market(ma_long, sd))
                 self.x_man.place_order(stop_order)
                 logging.info('Magi: run_strategy_on_market_tick: Placed stop_order={}'.format(stop_order))
 
@@ -163,7 +192,7 @@ class Magi:
                                     float('nan'),
                                     quantity,
                                     market_tick.dt_idx,
-                                    pct_from_market=self.config.limit_order_pct)
+                                    pct_from_market=self.get_limit_pct_from_market(ma_long, sd))
                 self.x_man.place_order(limit_order)
                 logging.info('Magi: run_strategy_on_market_tick: Placed limit_order={}'.format(limit_order))
 
@@ -178,4 +207,4 @@ class Magi:
         self.capital_used = 0
         for symbol, market_tick in market_ticks_by_symbol.items():
             if symbol in self.config.symbols:
-                self.run_strategy_on_market_tick_1(market_tick)
+                self.MODEL_MAP[self.model_name](market_tick)

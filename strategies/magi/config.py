@@ -63,7 +63,7 @@ class Config:
     def update(self, **kwargs):
         for k, v in kwargs.items():
             if k in dir(self):
-                setattr(self, k, v)
+                setattr(self, k, None if v == 'None' else v)
 
     def save(self, name):
         with open(f'models/{name}.yml', 'w') as file:

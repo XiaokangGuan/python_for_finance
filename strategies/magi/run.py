@@ -148,5 +148,5 @@ if __name__ == '__main__':
         datetime.date(2015, 1, 1),
         datetime.date.today(),
         CAPITAL,
-        'focus_stock'
+        'price_mean_reversion'
     )
