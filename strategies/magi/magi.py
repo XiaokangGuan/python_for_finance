@@ -105,12 +105,12 @@ class Magi:
     def run_strategy_on_market_tick_1(self, market_tick):
         """
         Run strategy for the market_tick given for a specific symbol.
-        Signal is based on stock prices.
+        Signal is based on daily price returns.
         The strategy probably also depends on past market_ticks, which need to be looked up in self.symbol_data
         Place orders based on strategy signals
         """
         # Update timeseries on daily market_tick Close
-        ts = pandas.Series(data=[market_tick.close], index=[market_tick.dt_idx])
+        ts = pandas.Series(data=[market_tick.close_return], index=[market_tick.dt_idx])
         if self.symbol_data.get(market_tick.symbol, None) is None:
             self.symbol_data[market_tick.symbol] = ts
         else:
@@ -130,9 +130,10 @@ class Magi:
         ma_short = ts[:market_tick.dt_idx][-self.config.ma_short_period:].mean()
         ma_long = ts[:market_tick.dt_idx][-self.config.ma_long_period:].mean()
         curr_price = market_tick.close
+        curr_return = market_tick.close_return
 
-        logging.debug('Magi: run_strategy_on_market_tick: curr_price={}, ma_long={}, sd={}, distance={}, ma_short={}'.format(curr_price, ma_long, sd, (curr_price - ma_long) / sd, ma_short))
-        if (curr_price < ma_long - sd * self.config.trigger_distance) and (curr_price > ma_short):
+        logging.debug('Magi: run_strategy_on_market_tick: curr_price={}, curr_return={}, ma_long={}, sd={}, distance={}, ma_short={}'.format(curr_price, curr_return, ma_long, sd, (curr_return - ma_long) / sd, ma_short))
+        if curr_return < ma_long - sd * self.config.trigger_distance:
             quantity = self.get_order_size(curr_price)
 
             # TODO: Without knowledge of the next market_tick, we place orders based on current market_tick
@@ -177,4 +178,4 @@ class Magi:
         self.capital_used = 0
         for symbol, market_tick in market_ticks_by_symbol.items():
             if symbol in self.config.symbols:
-                self.run_strategy_on_market_tick(market_tick)
+                self.run_strategy_on_market_tick_1(market_tick)
