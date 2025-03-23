@@ -17,7 +17,8 @@ COMMISSION_PER_SHARE = 0.005
 
 
 class Order:
-    def __init__(self, symbol, direction, type, price, quantity, open_dt_idx, pct_from_market=None):
+    def __init__(self, symbol, direction, type, price, quantity, open_dt_idx, pct_from_market=None,
+                 valid_from_dt_idx=None, valid_to_dt_idx=None):
         self.order_id = uuid.uuid4()
         self.symbol = symbol
         self.direction = direction
@@ -38,12 +39,17 @@ class Order:
         self.open_dt_idx = open_dt_idx
         # this is when the order is fully filled or cancelled
         self.close_dt_idx = None
+        # Order executable period (inclusive). None means no bound.
+        self.valid_from_dt_idx = valid_from_dt_idx
+        self.valid_to_dt_idx = valid_to_dt_idx
 
     def __str__(self):
-        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, pct_from_market={}, fill_price={}, quantity_outstanding={}, quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, close_dt_idx={}>'.format(
+        return 'Order<order_id={}, symbol={}, direction={}, type={}, price={}, pct_from_market={}, fill_price={}, ' \
+               'quantity_outstanding={}, quantity_filled={}, state={}, commission={}, link_id={}, open_dt_idx={}, ' \
+               'close_dt_idx={}>, valid_from_dt_idx={},valid_to_dt_idx={}'.format(
             self.order_id, self.symbol, self.direction, self.type, self.price, self.pct_from_market, self.fill_price,
             self.quantity_outstanding, self.quantity_filled, self.state, self.commission, self.link_id, self.open_dt_idx,
-            self.close_dt_idx)
+            self.close_dt_idx, self.valid_from_dt_idx, self.valid_to_dt_idx)
 
     def calculate_commission(self):
         """Calculate commission for this order, commission is only incurred on fully filled"""

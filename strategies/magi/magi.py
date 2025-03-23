@@ -65,7 +65,8 @@ class Magi:
 
         logging.info('Magi: run_strategy_on_market_tick: curr_price={}, ma_long={}, sd={}, distance={}, ma_short={}'.format(
             curr_price, ma_long, sd, (curr_price - ma_long) / sd, ma_short))
-        if (curr_price < ma_long - sd * self.config.trigger_distance) and (curr_price > ma_short):
+        if (curr_price < ma_long - sd * self.config.trigger_distance):
+        #if (curr_price < ma_long - sd * self.config.trigger_distance) and (curr_price > ma_short):
             quantity = self.get_order_size(curr_price)
             #TODO: Without knowledge of the next market_tick, we place orders based on current market_tick
             if quantity > 0:
@@ -78,27 +79,42 @@ class Magi:
                 self.x_man.place_order(market_order)
                 logging.info('Magi: run_strategy_on_market_tick: TRIGGER BUY: Placed marketOrder={}'.format(market_order))
 
-                #logging.info('Magi: run_strategy_on_market_tick: ts={}'.format(ts[:market_tick.dt_idx][-self.config.ma_long_period:]))
-                stop_order = Order(market_tick.symbol,
-                                   ORDER_DIRECTION_SELL,
-                                   ORDER_TYPE_STOP,
-                                   float('nan'),
-                                   quantity,
-                                   market_tick.dt_idx,
-                                   pct_from_market=self.config.stop_order_pct)
-                limit_order = Order(market_tick.symbol,
-                                    ORDER_DIRECTION_SELL,
-                                    ORDER_TYPE_LIMIT,
-                                    float('nan'),
-                                    quantity,
-                                    market_tick.dt_idx,
-                                    pct_from_market=self.config.limit_order_pct)
-                self.x_man.link_orders([market_order, stop_order, limit_order])
-                self.x_man.place_order(stop_order)
-                logging.info('Magi: run_strategy_on_market_tick: Placed stop_order={}'.format(stop_order))
-                self.x_man.place_order(limit_order)
-                logging.info('Magi: run_strategy_on_market_tick: Placed limit_order={}'.format(limit_order))
-                
+                #TODO: One idea is to manually close position next day, instead of replying on Limit / Stop orders
+                close_market_order = Order(market_tick.symbol,
+                                           ORDER_DIRECTION_SELL,
+                                           ORDER_TYPE_MARKET,
+                                           float('nan'),
+                                           quantity,
+                                           market_tick.dt_idx,
+                                           valid_from_dt_idx=market_tick.dt_idx + pandas.DateOffset(2),
+                                           valid_to_dt_idx=None)
+                self.x_man.place_order(close_market_order)
+                logging.info('Magi: run_strategy_on_market_tick: Placed close_market_order={}'.format(close_market_order))
+
+                self.x_man.link_orders([market_order, close_market_order])
+
+                # stop_order = Order(market_tick.symbol,
+                #                    ORDER_DIRECTION_SELL,
+                #                    ORDER_TYPE_STOP,
+                #                    float('nan'),
+                #                    quantity,
+                #                    market_tick.dt_idx,
+                #                    pct_from_market=self.config.stop_order_pct)
+                # self.x_man.place_order(stop_order)
+                # logging.info('Magi: run_strategy_on_market_tick: Placed stop_order={}'.format(stop_order))
+                #
+                # limit_order = Order(market_tick.symbol,
+                #                     ORDER_DIRECTION_SELL,
+                #                     ORDER_TYPE_LIMIT,
+                #                     float('nan'),
+                #                     quantity,
+                #                     market_tick.dt_idx,
+                #                     pct_from_market=self.config.limit_order_pct)
+                # self.x_man.place_order(limit_order)
+                # logging.info('Magi: run_strategy_on_market_tick: Placed limit_order={}'.format(limit_order))
+                #
+                # self.x_man.link_orders([market_order, stop_order, limit_order])
+
                 # Update daily capital used
                 self.capital_used += quantity * curr_price
             else:

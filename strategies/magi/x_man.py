@@ -115,6 +115,10 @@ class xMan:
 
     def execute_orders_on_market_tick(self, market_tick):
         for order in self.get_orders_by_symbol(market_tick.symbol):
+            if order.valid_to_dt_idx is not None and market_tick.dt_idx > order.valid_to_dt_idx:
+                continue
+            if order.valid_from_dt_idx is not None and market_tick.dt_idx < order.valid_from_dt_idx:
+                continue
             if order.state in [ORDER_STATE_FULLY_FILLED, ORDER_STATE_CANCELLED]:
                 continue
             if order.type == ORDER_TYPE_MARKET:

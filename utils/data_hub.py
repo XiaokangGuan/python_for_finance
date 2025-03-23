@@ -73,11 +73,12 @@ class DataHub:
             for symbol in symbolData.keys():
                 if dtIdx in symbolData[symbol].index:
                     # Construct marketTick for this tradingDate
-                    open = symbolData[symbol].loc[dtIdx, 'Open']
-                    close = symbolData[symbol].loc[dtIdx, 'Close']
-                    high = symbolData[symbol].loc[dtIdx, 'High']
-                    low = symbolData[symbol].loc[dtIdx, 'Low']
-                    volume = symbolData[symbol].loc[dtIdx, 'Volume']
+                    # YFinance changed API, now symboData[symbol] columns are MultiIndex
+                    open = symbolData[symbol].loc[dtIdx, ('Open', symbol)]
+                    close = symbolData[symbol].loc[dtIdx, ('Close', symbol)]
+                    high = symbolData[symbol].loc[dtIdx, ('High', symbol)]
+                    low = symbolData[symbol].loc[dtIdx, ('Low', symbol)]
+                    volume = symbolData[symbol].loc[dtIdx, ('Volume', symbol)]
                     marketTick = MarketTick(symbol, open, close, high, low, volume, dtIdx)
                     perSymbol[symbol] = marketTick
 
